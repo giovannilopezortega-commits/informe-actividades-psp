@@ -1,3 +1,93 @@
+
+function fillSignedPeriodControls(){
+  if(!$("#signedMonthSelect")||!$("#signedYearSelect")) return;
+  $("#signedMonthSelect").innerHTML=MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join("");
+  const y=new Date().getFullYear();
+  $("#signedYearSelect").innerHTML=[y-1,y,y+1].map(v=>`<option>${v}</option>`).join("");
+  $("#signedMonthSelect").value=new Date().getMonth();
+  $("#signedYearSelect").value=y;
+}
+
+function renderSignedSection(){
+  if(!$("#signedTable")) return;
+  if(DEMO_MODE){
+    const key=state.profile ? `signedReports_${state.profile.uid}` : "signedReports";
+    state.signedReports=JSON.parse(localStorage.getItem(key)||"[]");
+  }
+  if(state.profile){
+    $("#signedUserName").textContent=state.profile.name||"—";
+    $("#signedUserCode").textContent=state.profile.code||"—";
+  }
+  renderSignedFile();
+  renderSignedReports();
+}
+
+function renderSignedFile(){
+  if(!$("#signedFileCard")) return;
+  const f=state.signedFile;
+  $("#signedFileCard").classList.toggle("hidden",!f);
+  if(f){
+    $("#signedFileName").textContent=f.name;
+    $("#signedFileSize").textContent=fileSize(f.size);
+    $("#signedUploadStatus").className="signed-status ready";
+    $("#signedUploadStatus").innerHTML="<strong>Listo para enviar</strong><span>Verifica mes y año antes de continuar.</span>";
+  }else{
+    $("#signedUploadStatus").className="signed-status pending";
+    $("#signedUploadStatus").innerHTML="<strong>Pendiente de carga</strong><span>Selecciona el PDF firmado para continuar.</span>";
+  }
+}
+
+function renderSignedReports(){
+  if(!$("#signedTable")) return;
+  const rows=state.signedReports||[];
+  $("#signedEmpty").classList.toggle("hidden",rows.length>0);
+  $("#signedTable").classList.toggle("hidden",rows.length===0);
+  $("#signedTable tbody").innerHTML=rows.map(r=>`
+    <tr>
+      <td>${safe(r.period)}</td>
+      <td>${safe(r.fileName)}</td>
+      <td>${new Date(r.createdAt).toLocaleString("es-MX")}</td>
+      <td><span class="status-pill-ok">Enviado</span></td>
+    </tr>`).join("");
+}
+
+async function uploadSignedReport(){
+  if(!state.signedFile){
+    toast("Selecciona primero el PDF firmado.");
+    return;
+  }
+  if(state.signedFile.type!=="application/pdf"){
+    toast("Solo se permiten archivos PDF.");
+    return;
+  }
+  const month=+$("#signedMonthSelect").value;
+  const year=$("#signedYearSelect").value;
+  const period=`${MONTHS[month]} ${year}`;
+
+  if(DEMO_MODE){
+    const key=`signedReports_${state.profile.uid}`;
+    const record={
+      period,
+      month:month+1,
+      year:+year,
+      fileName:state.signedFile.name,
+      createdAt:new Date().toISOString(),
+      status:"sent"
+    };
+    state.signedReports.unshift(record);
+    localStorage.setItem(key,JSON.stringify(state.signedReports));
+    $("#signedUploadStatus").className="signed-status sent";
+    $("#signedUploadStatus").innerHTML="<strong>Informe registrado</strong><span>En el siguiente paso este envío se guardará automáticamente en Google Drive.</span>";
+    state.signedFile=null;
+    renderSignedFile();
+    renderSignedReports();
+    toast("Informe firmado registrado correctamente.");
+    return;
+  }
+
+  toast("La conexión con Google Drive aún no está configurada.");
+}
+
 async function saveFirebaseReport(blob,fileName,activities){
   const uid=state.user.uid, ts=Date.now(), path=`reports/${uid}/${$("#yearSelect").value}/${String(+$("#monthSelect").value+1).padStart(2,"0")}/${ts}_${fileName}`;
   const ref=firebase.ref(firebase.storage,path); await firebase.uploadBytes(ref,blob,{contentType:"application/pdf"});
@@ -61,7 +151,7 @@ $("#loginForm").addEventListener("submit",async e=>{
   try{
     if(DEMO_MODE){
       const u=state.users.find(x=>x.username===username&&x.password===pwd&&x.active!==false);if(!u)throw new Error("Usuario o contraseña incorrectos.");
-      state.user={uid:u.uid};state.profile={...u};state.history=JSON.parse(localStorage.getItem("demoHistory")||"[]");showApp();
+      state.user={uid:u.uid};state.profile={...u};state.history=JSON.parse(localStorage.getItem("demoHistory")||"[]");state.signedReports=JSON.parse(localStorage.getItem(`signedReports_${u.uid}`)||"[]");showApp();
     }else await firebase.signInWithEmailAndPassword(firebase.auth,usernameEmail(username),pwd);
   }catch(err){toast(err.message||"No fue posible iniciar sesión.");}
 });
@@ -80,8 +170,11 @@ $("#closePreview").addEventListener("click",()=>$("#previewModal").classList.add
 $("#previewModal").addEventListener("click",e=>{if(e.target===$("#previewModal"))$("#previewModal").classList.add("hidden")});
 $("#generateBtn").addEventListener("click",()=>generatePdf(true));
 $("#refreshHistoryBtn").addEventListener("click",async()=>{await loadHistory();renderHistory();toast("Historial actualizado.")});
+$("#signedFileInput").addEventListener("change",e=>{ const f=e.target.files?.[0]; if(!f) return; if(f.type!=="application/pdf"){toast("Solo se permiten archivos PDF."); e.target.value=""; return;} if(f.size>25*1024*1024){toast("El PDF no debe superar 25 MB."); e.target.value=""; return;} state.signedFile=f; renderSignedFile(); });
+$("#removeSignedFileBtn").addEventListener("click",()=>{state.signedFile=null;$("#signedFileInput").value="";renderSignedFile();});
+$("#uploadSignedBtn").addEventListener("click",uploadSignedReport);
 $("#userForm").addEventListener("submit",createUser);$("#settingsForm").addEventListener("submit",saveSettings);
 
-fillPeriodControls(); renderActivities();
+fillPeriodControls(); fillSignedPeriodControls(); renderActivities();
 $("#demoHint").classList.toggle("hidden",!DEMO_MODE);
 initFirebase().catch(err=>{console.error(err);toast("Error al inicializar Firebase: "+err.message)});
