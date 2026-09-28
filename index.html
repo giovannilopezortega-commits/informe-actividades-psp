@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#D8C3A5">
   <title>Informe de Actividades · Prestadores de Servicios</title>
   <link rel="manifest" href="manifest.json?v=3.0.0">
-  <link rel="stylesheet" href="styles.css?v=3.0.0">
+  <link rel="stylesheet" href="styles.css?v=3.3.0">
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
@@ -64,6 +64,7 @@
       <nav class="tabs" aria-label="Secciones">
         <button class="tab active" data-tab="formTab">Informe</button>
         <button class="tab" data-tab="historyTab">Historial</button>
+        <button class="tab" data-tab="signedTab">Informe firmado</button>
         <button class="tab hidden" id="adminTabButton" data-tab="adminTab">Administración</button>
       </nav>
 
@@ -171,6 +172,63 @@
         </article>
       </section>
 
+      <section id="signedTab" class="tab-panel">
+        <div class="grid two">
+          <article class="card">
+            <h3>Subir informe firmado</h3>
+            <p class="muted small">Después de firmar el documento en el portal de Firma Electrónica Avanzada del INE, carga aquí únicamente el PDF final firmado.</p>
+
+            <div class="form-grid">
+              <label>Mes
+                <select id="signedMonthSelect"></select>
+              </label>
+              <label>Año
+                <select id="signedYearSelect"></select>
+              </label>
+            </div>
+
+            <div class="signed-user-summary">
+              <div><span>Prestador</span><strong id="signedUserName">—</strong></div>
+              <div><span>Código</span><strong id="signedUserCode">—</strong></div>
+            </div>
+
+            <label class="signed-file-picker">
+              <input id="signedFileInput" type="file" accept=".pdf,application/pdf" hidden>
+              <span class="btn secondary">Seleccionar PDF firmado</span>
+            </label>
+
+            <div id="signedFileCard" class="signed-file-card hidden">
+              <div class="signed-file-icon">PDF</div>
+              <div class="signed-file-meta">
+                <strong id="signedFileName">—</strong>
+                <span id="signedFileSize">—</span>
+              </div>
+              <button id="removeSignedFileBtn" class="icon-btn" type="button">✕</button>
+            </div>
+
+            <div class="signed-status pending" id="signedUploadStatus">
+              <strong>Pendiente de carga</strong>
+              <span>Selecciona el PDF firmado para continuar.</span>
+            </div>
+
+            <button id="uploadSignedBtn" class="btn primary full signed-upload-btn" type="button">Enviar informe firmado</button>
+            <p class="muted small signed-note">La conexión con Google Drive se configurará en el siguiente paso. Por ahora la app registra el envío en modo demostración.</p>
+          </article>
+
+          <article class="card">
+            <h3>Informes firmados enviados</h3>
+            <p class="muted small">Aquí podrás confirmar qué meses ya fueron entregados.</p>
+            <div id="signedEmpty" class="empty-state">Todavía no has cargado informes firmados.</div>
+            <div class="table-wrap">
+              <table id="signedTable" class="data-table hidden">
+                <thead><tr><th>Periodo</th><th>Archivo</th><th>Fecha de carga</th><th>Estado</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
       <section id="adminTab" class="tab-panel">
         <div class="grid two">
           <article class="card">
@@ -228,8 +286,8 @@
   </div>
 
   <script src="firebase-config.js"></script>
-  <script src="app-core.js"></script>
+  <script src="app-core.js?v=3.3.0"></script>
   <script src="app-pdf.js?v=3.2.0"></script>
-  <script src="app-data.js"></script>
+  <script src="app-data.js?v=3.3.0"></script>
 </body>
 </html>
