@@ -21,7 +21,7 @@ const DEMO_USERS = [
 let firebase = null;
 let state = {
   user:null, profile:null, settings:{...DEMO_SETTINGS}, evidenceFiles:[], activities:[""], history:[],
-  users:[...DEMO_USERS]
+  users:[...DEMO_USERS], signedFile:null, signedReports:[]
 };
 
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove("show"),2700); }
@@ -60,7 +60,7 @@ async function loadFirebaseProfile(user){
 function showLogin(){ $("#loginView").classList.remove("hidden"); $("#appView").classList.add("hidden"); }
 function showApp(){
   $("#loginView").classList.add("hidden"); $("#appView").classList.remove("hidden");
-  renderProfile(); renderActivities(); renderEvidence(); renderHistory(); renderAdmin();
+  renderProfile(); renderActivities(); renderEvidence(); renderHistory(); renderSignedSection(); renderAdmin();
 }
 function renderProfile(){
   const p=state.profile, s=state.settings;
@@ -71,6 +71,8 @@ function renderProfile(){
   $("#reviewerName").textContent=s.reviewer; $("#reviewerRole").textContent=s.reviewerRole;
   const isAdmin=p.role==="admin"; $("#adminBtn").classList.toggle("hidden",!isAdmin); $("#adminTabButton").classList.toggle("hidden",!isAdmin);
   updatePeriodPreview();
+  if($("#signedUserName")) $("#signedUserName").textContent=p.name;
+  if($("#signedUserCode")) $("#signedUserCode").textContent=p.code;
 }
 function fillPeriodControls(){
   $("#monthSelect").innerHTML=MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join("");
