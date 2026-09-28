@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#3f3f46">
+  <meta name="theme-color" content="#D8C3A5">
   <title>Informe de Actividades · Prestadores de Servicios</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json?v=3.0.0">
+  <link rel="stylesheet" href="styles.css?v=3.0.0">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 </head>
@@ -15,12 +15,9 @@
 
   <section id="loginView" class="view login-view">
     <div class="login-card">
-      <div class="brand-lockup">
-        <div class="author-mark">GL</div>
-        <div>
-          <strong>Giovanni López</strong>
-          <span>Informe de Actividades</span>
-        </div>
+      <div class="login-heading">
+        <strong>Informe de Actividades</strong>
+        <span>Prestadores de Servicios Profesionales</span>
       </div>
       <h1>Acceso al sistema</h1>
       <p class="muted">Ingresa con el usuario y contraseña asignados.</p>
@@ -46,8 +43,7 @@
   <section id="appView" class="view hidden">
     <header class="topbar">
       <div class="brand-lockup compact">
-        <div class="author-mark light">GL</div>
-        <div><strong>Informe de Actividades</strong><span>Prestadores de Servicios Profesionales · Giovanni López</span></div>
+        <div><strong>Informe de Actividades</strong><span>Prestadores de Servicios Profesionales</span></div>
       </div>
       <div class="top-actions">
         <button id="adminBtn" class="btn ghost hidden">Administrar</button>
