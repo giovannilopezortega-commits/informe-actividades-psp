@@ -179,3 +179,43 @@ input:focus,select:focus,textarea:focus{
   .tabs{overflow:auto}
   .author-credit{font-size:10px}
 }
+
+
+.signed-user-summary{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0
+}
+.signed-user-summary>div{
+  background:#faf6f0;border:1px solid #eadfce;border-radius:12px;padding:12px
+}
+.signed-user-summary span{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+.signed-user-summary strong{font-size:13px}
+.signed-file-picker{display:block;margin-top:18px}
+.signed-file-picker .btn{display:inline-block}
+.signed-file-card{
+  display:flex;align-items:center;gap:12px;margin-top:14px;padding:12px;
+  border:1px solid #ddcfbd;border-radius:12px;background:#fffaf3
+}
+.signed-file-icon{
+  width:42px;height:42px;border-radius:10px;display:grid;place-items:center;
+  background:#eadbc7;font-size:12px;font-weight:800
+}
+.signed-file-meta{flex:1;min-width:0}
+.signed-file-meta strong,.signed-file-meta span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.signed-file-meta span{font-size:11px;color:var(--muted);margin-top:3px}
+.signed-status{
+  margin-top:16px;padding:13px 14px;border-radius:11px;border:1px solid #e1d4c3
+}
+.signed-status strong,.signed-status span{display:block}
+.signed-status span{font-size:12px;margin-top:4px}
+.signed-status.pending{background:#f8f3eb;color:#766b5f}
+.signed-status.ready{background:#efe4d5;color:#5e4b35}
+.signed-status.sent{background:#ece8df;color:#4d5147}
+.signed-upload-btn{margin-top:14px}
+.signed-note{margin:10px 0 0}
+.status-pill-ok{
+  display:inline-block;padding:5px 9px;border-radius:999px;background:#eee5d8;
+  color:#5b4f40;font-size:11px;font-weight:700
+}
+@media(max-width:760px){
+  .signed-user-summary{grid-template-columns:1fr}
+}
