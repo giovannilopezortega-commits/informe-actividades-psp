@@ -3,7 +3,7 @@
   "short_name": "Informes PSP",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#f4f4f5",
-  "theme_color": "#3f3f46",
+  "background_color": "#f5efe6",
+  "theme_color": "#d8c3a5",
   "icons": []
 }
