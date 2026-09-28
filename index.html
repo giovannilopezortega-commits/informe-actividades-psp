@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#8A1538">
+  <title>Informe de Actividades · Prestadores de Servicios</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <section id="loginView" class="view login-view">
+    <div class="login-card">
+      <div class="brand-lockup">
+        <div class="ine-mark">INE</div>
+        <div>
+          <strong>Instituto Nacional Electoral</strong>
+          <span>Informe de Actividades</span>
+        </div>
+      </div>
+      <h1>Acceso al sistema</h1>
+      <p class="muted">Ingresa con el usuario y contraseña asignados.</p>
+      <form id="loginForm">
+        <label>Usuario
+          <input id="username" autocomplete="username" required placeholder="usuario">
+        </label>
+        <label>Contraseña
+          <div class="password-wrap">
+            <input id="password" type="password" autocomplete="current-password" required placeholder="••••••••">
+            <button class="eye" id="togglePassword" type="button" aria-label="Mostrar contraseña">👁</button>
+          </div>
+        </label>
+        <button class="btn primary full" type="submit">Ingresar</button>
+      </form>
+      <div id="demoHint" class="demo-hint">
+        <b>Modo demostración:</b> usuario <code>karla</code> · contraseña <code>123456</code>
+      </div>
+    </div>
+  </section>
+
+  <section id="appView" class="view hidden">
+    <header class="topbar">
+      <div class="brand-lockup compact">
+        <div class="ine-mark">INE</div>
+        <div><strong>Informe de Actividades</strong><span>Prestadores de Servicios Profesionales</span></div>
+      </div>
+      <div class="top-actions">
+        <button id="adminBtn" class="btn ghost hidden">Administrar</button>
+        <button id="logoutBtn" class="btn ghost">Salir</button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Nuevo entregable</p>
+          <h2 id="welcomeTitle">Hola</h2>
+          <p class="muted">Completa las actividades y agrega las evidencias. El resto se llena automáticamente.</p>
+        </div>
+        <div class="hero-badge" id="userCodeBadge">Código</div>
+      </section>
+
+      <nav class="tabs" aria-label="Secciones">
+        <button class="tab active" data-tab="formTab">Informe</button>
+        <button class="tab" data-tab="historyTab">Historial</button>
+        <button class="tab hidden" id="adminTabButton" data-tab="adminTab">Administración</button>
+      </nav>
+
+      <section id="formTab" class="tab-panel active">
+        <div class="grid two">
+          <article class="card">
+            <h3>Datos del prestador</h3>
+            <div class="readonly-grid">
+              <div><span>Nombre</span><strong id="fName">—</strong></div>
+              <div><span>Código</span><strong id="fCode">—</strong></div>
+              <div class="wide"><span>Contrato No.</span><strong id="fContract">—</strong></div>
+              <div class="wide"><span>Unidad Administrativa</span><strong id="fUnit">—</strong></div>
+            </div>
+          </article>
+
+          <article class="card">
+            <h3>Periodo del entregable</h3>
+            <div class="form-grid">
+              <label>Mes
+                <select id="monthSelect"></select>
+              </label>
+              <label>Año
+                <select id="yearSelect"></select>
+              </label>
+              <label class="wide">Tipo de periodo
+                <select id="periodType">
+                  <option value="mensual">Mensual</option>
+                  <option value="primera">Primera quincena</option>
+                  <option value="segunda">Segunda quincena</option>
+                </select>
+              </label>
+            </div>
+            <div class="period-preview" id="periodPreview"></div>
+          </article>
+        </div>
+
+        <article class="card">
+          <h3>Actividad genérica</h3>
+          <p id="genericActivity" class="fixed-text"></p>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h3>Actividades desarrolladas en el periodo</h3>
+              <p class="muted small">Agrega una actividad por renglón. Puedes reordenarlas antes de generar el PDF.</p>
+            </div>
+            <button id="addActivityBtn" class="btn secondary">+ Agregar actividad</button>
+          </div>
+          <div id="activitiesList" class="activities"></div>
+        </article>
+
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h3>Evidencias / anexos</h3>
+              <p class="muted small">Admite fotografías JPG/PNG y documentos PDF.</p>
+            </div>
+            <label class="btn secondary file-btn">+ Seleccionar archivos
+              <input id="evidenceInput" type="file" accept=".pdf,image/jpeg,image/png" multiple hidden>
+            </label>
+          </div>
+          <div id="dropZone" class="drop-zone">
+            <strong>Arrastra aquí tus evidencias</strong>
+            <span>o usa “Seleccionar archivos”</span>
+          </div>
+          <div id="evidenceList" class="evidence-list"></div>
+        </article>
+
+        <article class="card signer-card">
+          <div>
+            <span>Elaboró</span>
+            <strong id="elaboroName">—</strong>
+            <small>El Prestador del Servicio</small>
+          </div>
+          <div>
+            <span>Revisó por parte del INE</span>
+            <strong id="reviewerName">—</strong>
+            <small id="reviewerRole">Firma del Servidor Público</small>
+          </div>
+        </article>
+
+        <div class="bottom-actions">
+          <button id="previewBtn" class="btn secondary">Vista previa</button>
+          <button id="generateBtn" class="btn primary">Generar PDF con anexos</button>
+        </div>
+      </section>
+
+      <section id="historyTab" class="tab-panel">
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <h3>Historial de informes</h3>
+              <p class="muted small">Consulta los informes que has generado.</p>
+            </div>
+            <button id="refreshHistoryBtn" class="btn secondary">Actualizar</button>
+          </div>
+          <div id="historyEmpty" class="empty-state">Todavía no hay informes generados.</div>
+          <div class="table-wrap">
+            <table id="historyTable" class="data-table hidden">
+              <thead><tr><th>Periodo</th><th>Fecha</th><th>Actividades</th><th>Archivo</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="adminTab" class="tab-panel">
+        <div class="grid two">
+          <article class="card">
+            <h3>Alta de prestador</h3>
+            <form id="userForm" class="form-grid">
+              <label class="wide">Nombre completo<input id="aName" required></label>
+              <label>Usuario<input id="aUsername" required></label>
+              <label>Contraseña inicial<input id="aPassword" type="password" required minlength="6"></label>
+              <label>Código<input id="aCode" required></label>
+              <label>Rol
+                <select id="aRole"><option value="user">Prestador</option><option value="admin">Administrador</option></select>
+              </label>
+              <label class="wide">Contrato No.<input id="aContract" required></label>
+              <button class="btn primary wide" type="submit">Crear usuario</button>
+            </form>
+          </article>
+
+          <article class="card">
+            <h3>Configuración institucional</h3>
+            <form id="settingsForm" class="form-grid">
+              <label class="wide">Unidad Administrativa<textarea id="sUnit" rows="3"></textarea></label>
+              <label>Inicio de vigencia<input id="sStart" type="date"></label>
+              <label>Fin de vigencia<input id="sEnd" type="date"></label>
+              <label class="wide">Actividad genérica<textarea id="sGeneric" rows="5"></textarea></label>
+              <label class="wide">Revisó por parte del INE<input id="sReviewer"></label>
+              <label class="wide">Cargo / leyenda<input id="sReviewerRole"></label>
+              <button class="btn primary wide" type="submit">Guardar configuración</button>
+            </form>
+          </article>
+        </div>
+
+        <article class="card">
+          <h3>Prestadores registrados</h3>
+          <div class="table-wrap">
+            <table class="data-table" id="usersTable">
+              <thead><tr><th>Nombre</th><th>Usuario</th><th>Código</th><th>Contrato</th><th>Rol</th><th>Estado</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </main>
+  </section>
+
+  <div id="previewModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong>Vista previa del informe</strong>
+        <button id="closePreview" class="icon-btn">✕</button>
+      </div>
+      <div id="reportPreview" class="report-preview"></div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
