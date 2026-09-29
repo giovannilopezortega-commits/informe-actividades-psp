@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#D8C3A5">
   <title>Informe de Actividades · Prestadores de Servicios</title>
   <link rel="manifest" href="manifest.json?v=3.0.0">
-  <link rel="stylesheet" href="styles.css?v=3.7.0">
+  <link rel="stylesheet" href="styles.css?v=3.8.0">
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
@@ -75,6 +75,7 @@
             <div class="readonly-grid">
               <div><span>Nombre</span><strong id="fName">—</strong></div>
               <div><span>Código</span><strong id="fCode">—</strong></div>
+              <div><span>Puesto</span><strong id="fPosition">—</strong></div>
               <div class="wide"><span>Contrato No.</span><strong id="fContract">—</strong></div>
               <div class="wide"><span>Unidad Administrativa</span><strong id="fUnit">—</strong></div>
             </div>
@@ -112,7 +113,18 @@
               <h3>Actividades desarrolladas en el periodo</h3>
               <p class="muted small">Agrega una actividad por renglón. Puedes reordenarlas antes de generar el PDF.</p>
             </div>
-            <button id="addActivityBtn" class="btn secondary">+ Agregar actividad</button>
+            <button id="addActivityBtn" class="btn secondary">+ Agregar manualmente</button>
+          </div>
+          <div class="activity-catalog">
+            <div>
+              <label>Seleccionar actividad del catálogo
+                <select id="activityCatalogSelect">
+                  <option value="">Selecciona una actividad del catálogo</option>
+                </select>
+              </label>
+              <p id="activityCatalogHelp" class="muted small">El catálogo se mostrará de acuerdo con el puesto del prestador.</p>
+            </div>
+            <button id="addCatalogActivityBtn" class="btn secondary" type="button">Agregar seleccionada</button>
           </div>
           <div id="activitiesList" class="activities"></div>
         </article>
@@ -244,7 +256,7 @@
             </label>
             <div class="bulk-help">
               <strong>Columnas requeridas</strong>
-              <span>nombre, usuario, contraseña, codigo, contrato, rol</span>
+              <span>nombre, usuario, contraseña, codigo, contrato, puesto, rol</span>
             </div>
           </div>
           <div id="bulkUsersPreview" class="bulk-preview hidden"></div>
@@ -262,6 +274,14 @@
               <label>Usuario<input id="aUsername" required></label>
               <label>Contraseña inicial<input id="aPassword" type="password" required minlength="6"></label>
               <label>Código<input id="aCode" required></label>
+              <label>Puesto
+                <select id="aPosition" required>
+                  <option value="SE">SE</option>
+                  <option value="CAE">CAE</option>
+                  <option value="Técnico">Técnico</option>
+                  <option value="Validador">Validador</option>
+                </select>
+              </label>
               <label>Rol
                 <select id="aRole"><option value="user">Prestador</option><option value="admin">Administrador</option></select>
               </label>
@@ -285,10 +305,37 @@
         </div>
 
         <article class="card">
+          <div class="card-head">
+            <div>
+              <h3>Catálogos por puesto</h3>
+              <p class="muted small">Configura la actividad genérica y las actividades desarrolladas disponibles para cada tipo de puesto.</p>
+            </div>
+          </div>
+          <div class="form-grid">
+            <label>Puesto
+              <select id="catalogPositionSelect">
+                <option value="SE">SE</option>
+                <option value="CAE">CAE</option>
+                <option value="Técnico">Técnico</option>
+                <option value="Validador">Validador</option>
+              </select>
+            </label>
+            <div></div>
+            <label class="wide">Actividad genérica
+              <textarea id="catalogGenericActivity" rows="5" placeholder="Captura aquí la actividad genérica del puesto..."></textarea>
+            </label>
+            <label class="wide">Actividades desarrolladas disponibles
+              <textarea id="catalogDevelopedActivities" rows="8" placeholder="Escribe una actividad por renglón..."></textarea>
+            </label>
+            <button id="savePositionCatalogBtn" class="btn primary wide" type="button">Guardar catálogo del puesto</button>
+          </div>
+        </article>
+
+        <article class="card">
           <h3>Prestadores registrados</h3>
           <div class="table-wrap">
             <table class="data-table" id="usersTable">
-              <thead><tr><th>Nombre</th><th>Usuario</th><th>Código</th><th>Contrato</th><th>Rol</th><th>Estado</th></tr></thead>
+              <thead><tr><th>Nombre</th><th>Usuario</th><th>Código</th><th>Puesto</th><th>Contrato</th><th>Rol</th><th>Estado</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -310,8 +357,8 @@
   </div>
 
   <script src="firebase-config.js?v=3.6.0"></script>
-  <script src="app-core.js?v=3.5.0"></script>
-  <script src="app-pdf.js?v=3.5.0"></script>
-  <script src="app-data.js?v=3.7.0"></script>
+  <script src="app-core.js?v=3.8.0"></script>
+  <script src="app-pdf.js?v=3.8.0"></script>
+  <script src="app-data.js?v=3.8.0"></script>
 </body>
 </html>
