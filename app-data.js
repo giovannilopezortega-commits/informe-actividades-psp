@@ -207,17 +207,18 @@ function renderAdmin(){
   if(!state.profile||state.profile.role!=="admin")return;
   const s=state.settings;$("#sUnit").value=s.unit||"";$("#sStart").value=s.contractStart||"";$("#sEnd").value=s.contractEnd||"";$("#sGeneric").value=s.genericActivity||"";$("#sReviewer").value=s.reviewer||"";$("#sReviewerRole").value=s.reviewerRole||"";
   renderUsersTable();
+  loadPositionCatalogForm();
 }
 async function loadUsers(){
   if(DEMO_MODE)return;
   const snap=await firebase.getDocs(firebase.collection(firebase.db,"users"));state.users=snap.docs.map(d=>({uid:d.id,...d.data()}));renderUsersTable();
 }
 function renderUsersTable(){
-  $("#usersTable tbody").innerHTML=state.users.map(u=>`<tr><td>${safe(u.name)}</td><td>${safe(u.username)}</td><td>${safe(u.code)}</td><td>${safe(u.contract)}</td><td>${safe(u.role)}</td><td>${u.active===false?"Inactivo":"Activo"}</td></tr>`).join("");
+  $("#usersTable tbody").innerHTML=state.users.map(u=>`<tr><td>${safe(u.name)}</td><td>${safe(u.username)}</td><td>${safe(u.code)}</td><td>${safe(u.position||"Validador")}</td><td>${safe(u.contract)}</td><td>${safe(u.role)}</td><td>${u.active===false?"Inactivo":"Activo"}</td></tr>`).join("");
 }
 async function createUser(e){
   e.preventDefault();
-  const userData={name:$("#aName").value.trim(),username:$("#aUsername").value.trim().toLowerCase(),code:$("#aCode").value.trim(),contract:$("#aContract").value.trim(),role:$("#aRole").value,active:true};
+  const userData={name:$("#aName").value.trim(),username:$("#aUsername").value.trim().toLowerCase(),code:$("#aCode").value.trim(),contract:$("#aContract").value.trim(),position:$("#aPosition").value,role:$("#aRole").value,active:true};
   const pwd=$("#aPassword").value;
   if(DEMO_MODE){state.users.push({uid:"demo-"+Date.now(),password:pwd,...userData});renderUsersTable();e.target.reset();toast("Usuario creado en modo demostración.");return;}
   const cred=await firebase.createUserWithEmailAndPassword(firebase.secondaryAuth,usernameEmail(userData.username),pwd);
@@ -244,7 +245,7 @@ function parseUsersCsv(text){
   if(lines.length<2) throw new Error("El CSV no contiene registros.");
   const delimiter=(lines[0].split(";").length>lines[0].split(",").length)?";":",";
   const headers=splitCsvLine(lines[0],delimiter).map(h=>h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim());
-  const required=["nombre","usuario","contrasena","codigo","contrato"];
+  const required=["nombre","usuario","contrasena","codigo","contrato","puesto"];
   required.forEach(h=>{if(!headers.includes(h)) throw new Error("Falta la columna: "+h);});
   const rows=[]; const seen=new Set();
   for(let i=1;i<lines.length;i++){
@@ -256,11 +257,13 @@ function parseUsersCsv(text){
       password:(obj.contrasena||"").trim(),
       code:(obj.codigo||"").trim(),
       contract:(obj.contrato||"").trim(),
+      position:(obj.puesto||"").trim(),
       role:(obj.rol||"user").trim().toLowerCase()==="admin"?"admin":"user",
       active:true,row:i+1
     };
-    if(!u.name||!u.username||!u.password||!u.code||!u.contract) throw new Error("Fila "+u.row+": hay datos obligatorios vacíos.");
+    if(!u.name||!u.username||!u.password||!u.code||!u.contract||!u.position) throw new Error("Fila "+u.row+": hay datos obligatorios vacíos.");
     if(u.password.length<6) throw new Error("Fila "+u.row+": la contraseña debe tener al menos 6 caracteres.");
+    if(!POSITION_TYPES.includes(u.position)) throw new Error("Fila "+u.row+": puesto no válido. Usa SE, CAE, Técnico o Validador.");
     if(seen.has(u.username)) throw new Error("Usuario duplicado en el CSV: "+u.username);
     seen.add(u.username); rows.push(u);
   }
@@ -273,14 +276,14 @@ function renderBulkPreview(){
   const sample=pendingBulkUsers.slice(0,5);
   box.classList.remove("hidden");
   box.innerHTML="<strong>"+pendingBulkUsers.length+" usuarios listos para importar</strong>"+
-    "<div class=\"table-wrap\"><table class=\"data-table compact-table\"><thead><tr><th>Nombre</th><th>Usuario</th><th>Código</th><th>Rol</th></tr></thead><tbody>"+
-    sample.map(u=>"<tr><td>"+safe(u.name)+"</td><td>"+safe(u.username)+"</td><td>"+safe(u.code)+"</td><td>"+safe(u.role)+"</td></tr>").join("")+
+    "<div class=\"table-wrap\"><table class=\"data-table compact-table\"><thead><tr><th>Nombre</th><th>Usuario</th><th>Código</th><th>Puesto</th><th>Rol</th></tr></thead><tbody>"+
+    sample.map(u=>"<tr><td>"+safe(u.name)+"</td><td>"+safe(u.username)+"</td><td>"+safe(u.code)+"</td><td>"+safe(u.position)+"</td><td>"+safe(u.role)+"</td></tr>").join("")+
     "</tbody></table></div>"+(pendingBulkUsers.length>5?"<span class=\"muted small\">Vista previa de los primeros 5 registros.</span>":"");
   $("#importUsersBtn").disabled=false;
 }
 
 function downloadUsersTemplate(){
-  const content="nombre,usuario,contraseña,codigo,contrato,rol\nKarla Villegas Arana,karla.villegas,Temporal2027,27C3082,PE-HE-000000,user";
+  const content="nombre,usuario,contraseña,codigo,contrato,puesto,rol\nKarla Villegas Arana,karla.villegas,Temporal2027,27C3082,PE-HE-000000,Validador,user";
   const blob=new Blob(["\uFEFF"+content],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob); const a=document.createElement("a");
   a.href=url;a.download="plantilla_prestadores.csv";document.body.appendChild(a);a.click();a.remove();
@@ -299,7 +302,7 @@ async function importBulkUsers(){
         state.users.push({uid:"demo-"+Date.now()+"-"+i,...u});
       }else{
         const cred=await firebase.createUserWithEmailAndPassword(firebase.secondaryAuth,usernameEmail(u.username),u.password);
-        await firebase.setDoc(firebase.doc(firebase.db,"users",cred.user.uid),{name:u.name,username:u.username,code:u.code,contract:u.contract,role:u.role,active:true});
+        await firebase.setDoc(firebase.doc(firebase.db,"users",cred.user.uid),{name:u.name,username:u.username,code:u.code,contract:u.contract,position:u.position,role:u.role,active:true});
         await firebase.signOut(firebase.secondaryAuth);
       }
       ok++;
@@ -310,6 +313,29 @@ async function importBulkUsers(){
   pendingBulkUsers=[];$("#bulkUsersInput").value="";renderBulkPreview();
   status.textContent=failed?("Importación terminada: "+ok+" creados, "+failed+" con error. "+errors.slice(0,3).join(" | ")):("Importación terminada: "+ok+" usuarios creados correctamente.");
   toast(failed?("Se crearon "+ok+" usuarios; "+failed+" tuvieron error."):("Se crearon "+ok+" usuarios correctamente."));
+}
+function loadPositionCatalogForm(){
+  if(!$("#catalogPositionSelect")) return;
+  const pos=$("#catalogPositionSelect").value || "SE";
+  const cfg=state.settings.positions?.[pos] || {genericActivity:"",developedActivities:[]};
+  $("#catalogGenericActivity").value=cfg.genericActivity||"";
+  $("#catalogDevelopedActivities").value=(cfg.developedActivities||[]).join("\n");
+}
+async function savePositionCatalog(){
+  const pos=$("#catalogPositionSelect").value;
+  if(!state.settings.positions) state.settings.positions={};
+  state.settings.positions[pos]={
+    genericActivity:$("#catalogGenericActivity").value.trim(),
+    developedActivities:$("#catalogDevelopedActivities").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean)
+  };
+  if(!DEMO_MODE){
+    await firebase.setDoc(firebase.doc(firebase.db,"config","institution"),{positions:state.settings.positions},{merge:true});
+  }
+  if(state.profile && currentPosition()===pos){
+    $("#genericActivity").textContent=currentPositionConfig().genericActivity || "Pendiente de configurar para este puesto.";
+    renderActivityCatalog();
+  }
+  toast("Catálogo de "+pos+" guardado.");
 }
 async function saveSettings(e){
   e.preventDefault(); const data={unit:$("#sUnit").value.trim(),contractStart:$("#sStart").value,contractEnd:$("#sEnd").value,genericActivity:$("#sGeneric").value.trim(),reviewer:$("#sReviewer").value.trim(),reviewerRole:$("#sReviewerRole").value.trim()};
@@ -332,7 +358,8 @@ $("#logoutBtn").addEventListener("click",async()=>{if(DEMO_MODE){state.user=stat
 $("#adminBtn").addEventListener("click",()=>{showTab("adminTab");loadUsers()});
 $$(".tab").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tab);if(b.dataset.tab==="adminTab")loadUsers()}));
 $("#monthSelect").addEventListener("change",updatePeriodPreview);$("#yearSelect").addEventListener("change",updatePeriodPreview);$("#periodType").addEventListener("change",updatePeriodPreview);
-$("#addActivityBtn").addEventListener("click",()=>{state.activities.push("");renderActivities();setTimeout(()=>$$(".activity-row textarea").at(-1)?.focus(),0)});
+$("#addActivityBtn").addEventListener("click",()=>{state.activities.push("");renderActivities();setTimeout(()=>$(".activity-row textarea").at(-1)?.focus(),0)});
+$("#addCatalogActivityBtn")?.addEventListener("click",addCatalogActivity);
 $("#evidenceInput").addEventListener("change",e=>{addFiles(e.target.files);e.target.value=""});
 ["dragenter","dragover"].forEach(ev=>$("#dropZone").addEventListener(ev,e=>{e.preventDefault();$("#dropZone").classList.add("drag")}));
 ["dragleave","drop"].forEach(ev=>$("#dropZone").addEventListener(ev,e=>{e.preventDefault();$("#dropZone").classList.remove("drag")}));
@@ -349,6 +376,8 @@ $("#userForm").addEventListener("submit",createUser);$("#settingsForm").addEvent
 $("#downloadUsersTemplateBtn")?.addEventListener("click",downloadUsersTemplate);
 $("#bulkUsersInput")?.addEventListener("change",async e=>{try{const f=e.target.files?.[0];if(!f)return;pendingBulkUsers=parseUsersCsv(await f.text());renderBulkPreview();$("#bulkUsersStatus").textContent="";}catch(err){pendingBulkUsers=[];renderBulkPreview();$("#bulkUsersStatus").textContent=err?.message||"No se pudo leer el CSV.";toast(err?.message||"No se pudo leer el CSV.");}});
 $("#importUsersBtn")?.addEventListener("click",importBulkUsers);
+$("#catalogPositionSelect")?.addEventListener("change",loadPositionCatalogForm);
+$("#savePositionCatalogBtn")?.addEventListener("click",savePositionCatalog);
 
 fillPeriodControls(); fillSignedPeriodControls(); renderActivities();
 $("#demoHint").classList.toggle("hidden",!DEMO_MODE);
