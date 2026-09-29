@@ -90,7 +90,7 @@ async function generatePdf(save=true){
 
     y+=ah+6;
     doc.setFont("helvetica","bold");
-    doc.text("Elaboró",x+33,y);
+    doc.text("Elaboró",x+33,y,{align:"center"});
     doc.text("Revisó por parte del INE",x+139,y,{align:"center"});
     y+=25;
     doc.setFontSize(8);
@@ -100,6 +100,13 @@ async function generatePdf(save=true){
     doc.setFont("helvetica","normal");
     doc.text("El Prestador del Servicio",x+33,y,{align:"center"});
     doc.text(String(s.reviewerRole||""),x+139,y,{align:"center"});
+
+    // Leyenda legal fija al pie de la primera página.
+    const legalText="Firmado electrónicamente en términos de los artículos 10 y 22 del Reglamento para el Uso y Operación de la Firma Electrónica Avanzada en el Instituto Nacional Electoral";
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(6.5);
+    const legalLines=doc.splitTextToSize(legalText,176);
+    doc.text(legalLines,14,286);
 
     const fileName=`Informe_${slug(p.name)}_${MONTHS[+$("#monthSelect").value]}_${$("#yearSelect").value}.pdf`;
 
