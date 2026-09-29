@@ -80,10 +80,24 @@ function fillPeriodControls(){
   $("#monthSelect").value=new Date().getMonth(); $("#yearSelect").value=y;
 }
 function periodText(){
-  const month=MONTHS[+$("#monthSelect").value].toLowerCase(), year=$("#yearSelect").value, type=$("#periodType").value;
-  if(type==="primera") return `Entregable correspondiente a la primera quincena del mes de ${month} del año ${year}`;
-  if(type==="segunda") return `Entregable correspondiente a la segunda quincena del mes de ${month} del año ${year}`;
-  return `Entregable correspondiente al mes de ${month} del año ${year}`;
+  const monthIndex=+$("#monthSelect").value;
+  const month=MONTHS[monthIndex].toLowerCase();
+  const year=+$("#yearSelect").value;
+  const type=$("#periodType").value;
+  const lastDay=new Date(year,monthIndex+1,0).getDate();
+
+  if(type==="primera"){
+    return `Entregable correspondiente del 01 al 15 de ${month} de ${year}`;
+  }
+  if(type==="segunda"){
+    return `Entregable correspondiente del 16 al ${String(lastDay).padStart(2,"0")} de ${month} de ${year}`;
+  }
+  return `Entregable correspondiente del 01 al ${String(lastDay).padStart(2,"0")} de ${month} de ${year}`;
+}
+
+function elaborationDateText(){
+  const d=new Date();
+  return d.toLocaleDateString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric"});
 }
 function updatePeriodPreview(){ $("#periodPreview").textContent=periodText(); }
 function renderActivities(){
@@ -121,8 +135,10 @@ function previewHTML(){
   const acts=state.activities.filter(x=>x.trim()).map(x=>`<li>${safe(x)}</li>`).join("");
   const start=formatDate(s.contractStart), end=formatDate(s.contractEnd);
   return `<div class="paper">
-    <div class="paper-header"><div><div class="ine-big">INE</div><b>Instituto Nacional Electoral</b></div>
-    <div class="paper-title">Informe de Actividades<br>Prestadores de Servicios Profesionales</div></div>
+    <div class="paper-header">
+      <div class="paper-logo-placeholder"><b>INE</b><span>Instituto Nacional Electoral</span></div>
+      <div class="paper-title">Informe de Actividades<br>Prestadores de Servicios Profesionales<br><span>Fecha de elaboración: ${elaborationDateText()}</span></div>
+    </div>
     <table class="paper-table"><tr><td><b>Nombre del Prestador del Servicio</b><br><br><div class="paper-center">${safe(p.name)}</div></td>
     <td><b>Unidad Administrativa</b><br><br><div class="paper-center">${safe(s.unit)}</div></td>
     <td><b>Código</b><br><br><div class="paper-center">${safe(p.code)}</div></td></tr>
