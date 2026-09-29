@@ -16,9 +16,17 @@ async function generatePdf(save=true){
     const x=14,w=182;
 
     doc.setFont("helvetica","bold");
+    doc.setFontSize(22);
+    doc.text("INE",14,16);
+    doc.setFontSize(7);
+    doc.text("Instituto Nacional Electoral",14,21);
+
     doc.setFontSize(10);
-    doc.text("Informe de Actividades",195,16,{align:"right"});
-    doc.text("Prestadores de Servicios Profesionales",195,21,{align:"right"});
+    doc.text("Informe de Actividades",195,14,{align:"right"});
+    doc.text("Prestadores de Servicios Profesionales",195,19,{align:"right"});
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(7.5);
+    doc.text(`Fecha de elaboración: ${elaborationDateText()}`,195,24,{align:"right"});
 
     let y=30;
     const box=(bx,by,bw,bh)=>doc.rect(bx,by,bw,bh);
