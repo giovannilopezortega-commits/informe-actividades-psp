@@ -4,18 +4,28 @@ const { DEMO_MODE, firebaseConfig, INTERNAL_EMAIL_DOMAIN } = window.APP_CONFIG;
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const POSITION_TYPES = ["SE","CAE","Técnico","Validador"];
 
 const DEMO_SETTINGS = {
   unit:"Junta Distrital Ejecutiva 33 del Instituto Nacional Electoral en el Estado de México",
   contractStart:"2023-11-01",
   contractEnd:"2023-12-31",
   genericActivity:"Registrar, procesar y validar la información que se genera en los diversos sistemas informáticos que integran el multisistema ELEC y ELEC MOVIL, correspondiente al proceso de reclutamiento y seguimiento de supervisoras/es electorales (SE) y capacitadoras/es-asistentes electorales (CAE) de las actividades que desarrollan las y los SE y CAE, así como el proceso de integración de mesas directivas de casilla y de la capacitación electoral.",
+  positions:{
+    "SE":{genericActivity:"",developedActivities:[]},
+    "CAE":{genericActivity:"",developedActivities:[]},
+    "Técnico":{genericActivity:"",developedActivities:[]},
+    "Validador":{
+      genericActivity:"Registrar, procesar y validar la información que se genera en los diversos sistemas informáticos que integran el multisistema ELEC y ELEC MOVIL, correspondiente al proceso de reclutamiento y seguimiento de supervisoras/es electorales (SE) y capacitadoras/es-asistentes electorales (CAE) de las actividades que desarrollan las y los SE y CAE, así como el proceso de integración de mesas directivas de casilla y de la capacitación electoral.",
+      developedActivities:[]
+    }
+  },
   reviewer:"Lic. Esthela Del Carmen Torres Rivera",
   reviewerRole:"Firma del Servidor Público"
 };
 const DEMO_USERS = [
-  {uid:"demo-karla",username:"karla",password:"123456",name:"Karla Villegas Arana",code:"27C3082",contract:"PE-HE-15153300000-F0386941-385826-3",role:"user",active:true},
-  {uid:"demo-admin",username:"admin",password:"admin123",name:"Administrador",code:"ADMIN",contract:"—",role:"admin",active:true}
+  {uid:"demo-karla",username:"karla",password:"123456",name:"Karla Villegas Arana",code:"27C3082",contract:"PE-HE-15153300000-F0386941-385826-3",position:"Validador",role:"user",active:true},
+  {uid:"demo-admin",username:"admin",password:"admin123",name:"Administrador",code:"ADMIN",contract:"—",position:"Validador",role:"admin",active:true}
 ];
 
 let firebase = null;
@@ -62,12 +72,39 @@ function showApp(){
   $("#loginView").classList.add("hidden"); $("#appView").classList.remove("hidden");
   renderProfile(); renderActivities(); renderEvidence(); renderHistory(); renderSignedSection(); renderAdmin();
 }
+function currentPosition(){
+  return state.profile?.position || "Validador";
+}
+function currentPositionConfig(){
+  const pos=currentPosition();
+  const configured=state.settings?.positions?.[pos];
+  if(configured) return {genericActivity:configured.genericActivity||"",developedActivities:Array.isArray(configured.developedActivities)?configured.developedActivities:[]};
+  return {genericActivity:state.settings?.genericActivity||"",developedActivities:[]};
+}
+function genericActivityTitle(){
+  const pos=currentPosition();
+  if(pos==="Validador") return "Actividad Genérica del Validador de Captura";
+  if(pos==="Técnico") return "Actividad Genérica del Técnico";
+  return "Actividad Genérica de "+pos;
+}
+function renderActivityCatalog(){
+  const select=$("#activityCatalogSelect");
+  if(!select) return;
+  const list=currentPositionConfig().developedActivities;
+  select.innerHTML='<option value="">Selecciona una actividad del catálogo</option>'+list.map((a,i)=>'<option value="'+i+'">'+safe(a)+'</option>').join("");
+  select.disabled=list.length===0;
+  $("#addCatalogActivityBtn").disabled=list.length===0;
+  const help=$("#activityCatalogHelp");
+  if(help) help.textContent=list.length ? "Selecciona una actividad y agrégala al informe. También puedes capturar actividades manualmente." : "El catálogo de actividades para este puesto está pendiente de configurar.";
+}
 function renderProfile(){
   const p=state.profile, s=state.settings;
   $("#welcomeTitle").textContent=`Hola, ${p.name}`;
   $("#userCodeBadge").textContent=`Código ${p.code}`;
   $("#fName").textContent=p.name; $("#fCode").textContent=p.code; $("#fContract").textContent=p.contract; $("#fUnit").textContent=s.unit;
-  $("#genericActivity").textContent=s.genericActivity; $("#elaboroName").textContent=p.name;
+  if($("#fPosition")) $("#fPosition").textContent=currentPosition();
+  $("#genericActivity").textContent=currentPositionConfig().genericActivity || "Pendiente de configurar para este puesto."; $("#elaboroName").textContent=p.name;
+  renderActivityCatalog();
   $("#reviewerName").textContent=s.reviewer; $("#reviewerRole").textContent=s.reviewerRole;
   const isAdmin=p.role==="admin"; $("#adminBtn").classList.toggle("hidden",!isAdmin); $("#adminTabButton").classList.toggle("hidden",!isAdmin);
   updatePeriodPreview();
@@ -100,6 +137,18 @@ function elaborationDateText(){
   return d.toLocaleDateString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric"});
 }
 function updatePeriodPreview(){ $("#periodPreview").textContent=periodText(); }
+function addCatalogActivity(){
+  const select=$("#activityCatalogSelect");
+  if(!select || select.value==="") return;
+  const list=currentPositionConfig().developedActivities;
+  const text=list[Number(select.value)];
+  if(!text) return;
+  const emptyIndex=state.activities.findIndex(x=>!x.trim());
+  if(emptyIndex>=0) state.activities[emptyIndex]=text;
+  else state.activities.push(text);
+  renderActivities();
+  select.value="";
+}
 function renderActivities(){
   $("#activitiesList").innerHTML=state.activities.map((a,i)=>`
     <div class="activity-row" data-i="${i}">
@@ -144,8 +193,8 @@ function previewHTML(){
     <td><b>Código</b><br><br><div class="paper-center">${safe(p.code)}</div></td></tr>
     <tr><td colspan="3"><b>Contrato No:</b><br><div class="paper-center">${safe(p.contract)}</div></td></tr>
     <tr><td colspan="3" class="paper-center"><b>Vigencia del Contrato</b><br>Del: ${start} &nbsp;&nbsp; Al: ${end}<br><br><b>${safe(periodText())}</b></td></tr></table>
-    <div class="paper-section-title">Actividad Genérica del Validador de Captura</div>
-    <div class="paper-box">${safe(s.genericActivity)}</div>
+    <div class="paper-section-title">${safe(genericActivityTitle())}</div>
+    <div class="paper-box">${safe(currentPositionConfig().genericActivity || "Pendiente de configurar para este puesto.")}</div>
     <div class="paper-section-title">Actividades Desarrolladas en el Periodo</div>
     <div class="paper-box paper-activities"><ul>${acts||"<li>Sin actividades capturadas</li>"}</ul></div>
     <div class="paper-signers"><div>Elaboró<strong>${safe(p.name)}</strong>El Prestador del Servicio</div>
