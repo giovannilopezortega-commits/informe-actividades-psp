@@ -15,7 +15,7 @@ window.APP_CONFIG = {
 
   // Google Drive para informes firmados.
   // DRIVE_WEB_APP_URL se llenará después de desplegar google-drive-apps-script.gs como Web App.
-  DRIVE_WEB_APP_URL: "",
+  DRIVE_WEB_APP_URL: "https://script.google.com/macros/s/AKfycbzHACuXASFol05lilqQljla_V3xJTryX6Q-zpr9fXnLVb8BuMJZOXJEpXegMy0GlokU/exec",
   DRIVE_ROOT_FOLDER_ID: "1r97hwRuop6TfxJ_XIG4l5CRn4arPSNBj",
   SIGNED_PDF_MAX_MB: 15
 };
