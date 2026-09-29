@@ -45,47 +45,132 @@ function renderSignedReports(){
   $("#signedTable tbody").innerHTML=rows.map(r=>`
     <tr>
       <td>${safe(r.period)}</td>
-      <td>${safe(r.fileName)}</td>
+      <td>${r.driveUrl?`<a href="${r.driveUrl}" target="_blank" rel="noopener">${safe(r.fileName)}</a>`:safe(r.fileName)}</td>
       <td>${new Date(r.createdAt).toLocaleString("es-MX")}</td>
       <td><span class="status-pill-ok">Enviado</span></td>
     </tr>`).join("");
 }
 
-async function uploadSignedReport(){
-  if(!state.signedFile){
-    toast("Selecciona primero el PDF firmado.");
-    return;
-  }
-  if(state.signedFile.type!=="application/pdf"){
-    toast("Solo se permiten archivos PDF.");
-    return;
-  }
-  const month=+$("#signedMonthSelect").value;
-  const year=$("#signedYearSelect").value;
-  const period=`${MONTHS[month]} ${year}`;
+async function fileToBase64(file){
+  return await new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result).split(",")[1]||"");
+    reader.onerror=()=>reject(reader.error||new Error("No se pudo leer el archivo."));
+    reader.readAsDataURL(file);
+  });
+}
 
-  if(DEMO_MODE){
-    const key=`signedReports_${state.profile.uid}`;
+async function uploadSignedReport(){
+  try{
+    if(!state.signedFile){
+      toast("Selecciona primero el PDF firmado.");
+      return;
+    }
+    if(state.signedFile.type!=="application/pdf"){
+      toast("Solo se permiten archivos PDF.");
+      return;
+    }
+
+    const maxMb=Number(window.APP_CONFIG.SIGNED_PDF_MAX_MB||15);
+    if(state.signedFile.size>maxMb*1024*1024){
+      toast(`El PDF no debe superar ${maxMb} MB.`);
+      return;
+    }
+
+    const month=+$("#signedMonthSelect").value;
+    const year=+$("#signedYearSelect").value;
+    const period=`${MONTHS[month]} ${year}`;
+    const endpoint=String(window.APP_CONFIG.DRIVE_WEB_APP_URL||"").trim();
+
+    // Mientras no exista el Web App de Apps Script, conserva el modo de prueba local.
+    if(!endpoint){
+      const key=`signedReports_${state.profile.uid}`;
+      const record={
+        period,
+        month:month+1,
+        year:+year,
+        fileName:state.signedFile.name,
+        createdAt:new Date().toISOString(),
+        status:"pending-drive"
+      };
+      state.signedReports.unshift(record);
+      localStorage.setItem(key,JSON.stringify(state.signedReports));
+      $("#signedUploadStatus").className="signed-status sent";
+      $("#signedUploadStatus").innerHTML="<strong>Registrado en modo de prueba</strong><span>Falta activar la conexión con Google Drive.</span>";
+      state.signedFile=null;
+      $("#signedFileInput").value="";
+      renderSignedFile();
+      renderSignedReports();
+      toast("Informe registrado. Falta activar Google Drive.");
+      return;
+    }
+
+    $("#uploadSignedBtn").disabled=true;
+    $("#signedUploadStatus").className="signed-status ready";
+    $("#signedUploadStatus").innerHTML="<strong>Enviando a Google Drive…</strong><span>No cierres esta ventana.</span>";
+
+    const base64=await fileToBase64(state.signedFile);
+    const payload={
+      action:"uploadSignedReport",
+      rootFolderId:window.APP_CONFIG.DRIVE_ROOT_FOLDER_ID,
+      userUid:state.profile.uid||state.user?.uid||"",
+      name:state.profile.name,
+      code:state.profile.code,
+      contract:state.profile.contract||"",
+      month:month+1,
+      monthName:MONTHS[month],
+      year:+year,
+      originalFileName:state.signedFile.name,
+      mimeType:"application/pdf",
+      base64
+    };
+
+    const response=await fetch(endpoint,{
+      method:"POST",
+      body:JSON.stringify(payload)
+    });
+
+    const text=await response.text();
+    let result;
+    try{ result=JSON.parse(text); }catch{ throw new Error("Respuesta inválida del servidor de Drive."); }
+
+    if(!result.ok){
+      if(result.code==="DUPLICATE"){
+        throw new Error("Ya existe un informe firmado para ese prestador, mes y año.");
+      }
+      throw new Error(result.error||"No se pudo guardar el informe en Google Drive.");
+    }
+
     const record={
       period,
       month:month+1,
       year:+year,
-      fileName:state.signedFile.name,
+      fileName:result.fileName||state.signedFile.name,
       createdAt:new Date().toISOString(),
-      status:"sent"
+      status:"sent",
+      driveUrl:result.fileUrl||"",
+      driveFileId:result.fileId||""
     };
+
+    const key=`signedReports_${state.profile.uid}`;
     state.signedReports.unshift(record);
     localStorage.setItem(key,JSON.stringify(state.signedReports));
+
     $("#signedUploadStatus").className="signed-status sent";
-    $("#signedUploadStatus").innerHTML="<strong>Informe registrado</strong><span>En el siguiente paso este envío se guardará automáticamente en Google Drive.</span>";
+    $("#signedUploadStatus").innerHTML="<strong>Informe enviado correctamente</strong><span>El PDF quedó archivado en Google Drive.</span>";
     state.signedFile=null;
+    $("#signedFileInput").value="";
     renderSignedFile();
     renderSignedReports();
-    toast("Informe firmado registrado correctamente.");
-    return;
+    toast("Informe firmado guardado en Google Drive.");
+  }catch(err){
+    console.error("Error al enviar informe firmado:",err);
+    $("#signedUploadStatus").className="signed-status pending";
+    $("#signedUploadStatus").innerHTML=`<strong>No se pudo enviar</strong><span>${safe(err?.message||"Error desconocido")}</span>`;
+    toast(err?.message||"No se pudo enviar el informe.");
+  }finally{
+    $("#uploadSignedBtn").disabled=false;
   }
-
-  toast("La conexión con Google Drive aún no está configurada.");
 }
 
 async function saveFirebaseReport(blob,fileName,activities){
@@ -170,7 +255,7 @@ $("#closePreview").addEventListener("click",()=>$("#previewModal").classList.add
 $("#previewModal").addEventListener("click",e=>{if(e.target===$("#previewModal"))$("#previewModal").classList.add("hidden")});
 $("#generateBtn").addEventListener("click",()=>generatePdf(true));
 $("#refreshHistoryBtn").addEventListener("click",async()=>{await loadHistory();renderHistory();toast("Historial actualizado.")});
-$("#signedFileInput").addEventListener("change",e=>{ const f=e.target.files?.[0]; if(!f) return; if(f.type!=="application/pdf"){toast("Solo se permiten archivos PDF."); e.target.value=""; return;} if(f.size>25*1024*1024){toast("El PDF no debe superar 25 MB."); e.target.value=""; return;} state.signedFile=f; renderSignedFile(); });
+$("#signedFileInput").addEventListener("change",e=>{ const f=e.target.files?.[0]; if(!f) return; if(f.type!=="application/pdf"){toast("Solo se permiten archivos PDF."); e.target.value=""; return;} const maxMb=Number(window.APP_CONFIG.SIGNED_PDF_MAX_MB||15); if(f.size>maxMb*1024*1024){toast(`El PDF no debe superar ${maxMb} MB.`); e.target.value=""; return;} state.signedFile=f; renderSignedFile(); });
 $("#removeSignedFileBtn").addEventListener("click",()=>{state.signedFile=null;$("#signedFileInput").value="";renderSignedFile();});
 $("#uploadSignedBtn").addEventListener("click",uploadSignedReport);
 $("#userForm").addEventListener("submit",createUser);$("#settingsForm").addEventListener("submit",saveSettings);
