@@ -5,6 +5,7 @@ const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const POSITION_TYPES = ["SE","CAE","Técnico","Validador"];
+const ACTIVITY_CATALOGS = window.ACTIVITY_CATALOGS || {};
 
 const DEMO_SETTINGS = {
   unit:"Junta Distrital Ejecutiva 33 del Instituto Nacional Electoral en el Estado de México",
@@ -12,8 +13,8 @@ const DEMO_SETTINGS = {
   contractEnd:"2023-12-31",
   genericActivity:"Registrar, procesar y validar la información que se genera en los diversos sistemas informáticos que integran el multisistema ELEC y ELEC MOVIL, correspondiente al proceso de reclutamiento y seguimiento de supervisoras/es electorales (SE) y capacitadoras/es-asistentes electorales (CAE) de las actividades que desarrollan las y los SE y CAE, así como el proceso de integración de mesas directivas de casilla y de la capacitación electoral.",
   positions:{
-    "SE":{genericActivity:"",developedActivities:[]},
-    "CAE":{genericActivity:"",developedActivities:[]},
+    "SE":ACTIVITY_CATALOGS.SE || {genericActivity:"",developedActivities:[]},
+    "CAE":ACTIVITY_CATALOGS.CAE || {genericActivity:"",developedActivities:[]},
     "Técnico":{genericActivity:"",developedActivities:[]},
     "Validador":{
       genericActivity:"Registrar, procesar y validar la información que se genera en los diversos sistemas informáticos que integran el multisistema ELEC y ELEC MOVIL, correspondiente al proceso de reclutamiento y seguimiento de supervisoras/es electorales (SE) y capacitadoras/es-asistentes electorales (CAE) de las actividades que desarrollan las y los SE y CAE, así como el proceso de integración de mesas directivas de casilla y de la capacitación electoral.",
@@ -75,6 +76,14 @@ function showApp(){
 function currentPosition(){
   return state.profile?.position || "Validador";
 }
+function positionLabel(pos=currentPosition()){
+  return ({
+    "SE":"Supervisor Electoral",
+    "CAE":"Capacitador-Asistente Electoral",
+    "Técnico":"Técnico",
+    "Validador":"Validador de Captura"
+  })[pos] || pos;
+}
 function currentPositionConfig(){
   const pos=currentPosition();
   const configured=state.settings?.positions?.[pos];
@@ -85,7 +94,7 @@ function genericActivityTitle(){
   const pos=currentPosition();
   if(pos==="Validador") return "Actividad Genérica del Validador de Captura";
   if(pos==="Técnico") return "Actividad Genérica del Técnico";
-  return "Actividad Genérica de "+pos;
+  return "Actividad Genérica del "+positionLabel(pos);
 }
 function renderActivityCatalog(){
   const select=$("#activityCatalogSelect");
@@ -102,7 +111,7 @@ function renderProfile(){
   $("#welcomeTitle").textContent=`Hola, ${p.name}`;
   $("#userCodeBadge").textContent=`Código ${p.code}`;
   $("#fName").textContent=p.name; $("#fCode").textContent=p.code; $("#fContract").textContent=p.contract; $("#fUnit").textContent=s.unit;
-  if($("#fPosition")) $("#fPosition").textContent=currentPosition();
+  if($("#fPosition")) $("#fPosition").textContent=positionLabel();
   $("#genericActivity").textContent=currentPositionConfig().genericActivity || "Pendiente de configurar para este puesto."; $("#elaboroName").textContent=p.name;
   renderActivityCatalog();
   $("#reviewerName").textContent=s.reviewer; $("#reviewerRole").textContent=s.reviewerRole;
