@@ -63,9 +63,9 @@ async function generatePdf(save=true){
 
     y+=32;
     doc.setFontSize(8);
-    doc.text("Actividad Genérica del Validador de Captura",x+w/2,y,{align:"center"});
+    doc.text(genericActivityTitle(),x+w/2,y,{align:"center"});
     y+=2;
-    const genericLines=doc.splitTextToSize(String(s.genericActivity||""),w-8);
+    const genericLines=doc.splitTextToSize(String(currentPositionConfig().genericActivity||"Pendiente de configurar para este puesto."),w-8);
     const gh=Math.max(19,genericLines.length*4+7);
     box(x,y,w,gh);
     doc.setFont("helvetica","normal");
