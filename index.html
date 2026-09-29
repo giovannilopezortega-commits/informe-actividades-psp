@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#D8C3A5">
   <title>Informe de Actividades · Prestadores de Servicios</title>
   <link rel="manifest" href="manifest.json?v=3.0.0">
-  <link rel="stylesheet" href="styles.css?v=3.5.0">
+  <link rel="stylesheet" href="styles.css?v=3.7.0">
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
@@ -212,7 +212,7 @@
             </div>
 
             <button id="uploadSignedBtn" class="btn primary full signed-upload-btn" type="button">Enviar informe firmado</button>
-            <p class="muted small signed-note">Los informes firmados se archivarán automáticamente en Google Drive por año, mes y prestador cuando se active la conexión.</p>
+            <p class="muted small signed-note">Los informes firmados se archivan automáticamente en Google Drive, organizados por año, mes y prestador.</p>
           </article>
 
           <article class="card">
@@ -230,6 +230,30 @@
       </section>
 
       <section id="adminTab" class="tab-panel">
+        <article class="card bulk-card">
+          <div class="card-head">
+            <div>
+              <h3>Alta masiva de prestadores</h3>
+              <p class="muted small">Importa varios prestadores desde un archivo CSV. Ideal para el alta inicial de aproximadamente 130 usuarios.</p>
+            </div>
+            <button id="downloadUsersTemplateBtn" class="btn secondary" type="button">Descargar plantilla CSV</button>
+          </div>
+          <div class="bulk-import-grid">
+            <label class="bulk-file-picker">Archivo CSV
+              <input id="bulkUsersInput" type="file" accept=".csv,text/csv">
+            </label>
+            <div class="bulk-help">
+              <strong>Columnas requeridas</strong>
+              <span>nombre, usuario, contraseña, codigo, contrato, rol</span>
+            </div>
+          </div>
+          <div id="bulkUsersPreview" class="bulk-preview hidden"></div>
+          <div class="bulk-actions">
+            <button id="importUsersBtn" class="btn primary" type="button" disabled>Importar usuarios</button>
+            <span id="bulkUsersStatus" class="muted small"></span>
+          </div>
+        </article>
+
         <div class="grid two">
           <article class="card">
             <h3>Alta de prestador</h3>
@@ -288,6 +312,6 @@
   <script src="firebase-config.js?v=3.6.0"></script>
   <script src="app-core.js?v=3.5.0"></script>
   <script src="app-pdf.js?v=3.5.0"></script>
-  <script src="app-data.js?v=3.6.0"></script>
+  <script src="app-data.js?v=3.7.0"></script>
 </body>
 </html>
