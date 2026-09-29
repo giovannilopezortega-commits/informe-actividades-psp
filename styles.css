@@ -241,3 +241,17 @@ input:focus,select:focus,textarea:focus{
   .bulk-import-grid{grid-template-columns:1fr}
   .bulk-actions .btn{width:100%}
 }
+
+
+/* Puestos y catálogos v3.8 */
+.activity-catalog{
+  display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;
+  padding:14px;margin-top:14px;border:1px solid #eadfce;border-radius:12px;background:#fbf7f1;
+}
+.activity-catalog label{margin:0}
+.activity-catalog select{width:100%}
+.activity-catalog .btn{margin-bottom:28px}
+@media(max-width:760px){
+  .activity-catalog{grid-template-columns:1fr}
+  .activity-catalog .btn{margin-bottom:0;width:100%}
+}
