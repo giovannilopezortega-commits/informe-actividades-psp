@@ -6,7 +6,7 @@ const $$ = (s) => [...document.querySelectorAll(s)];
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 const DEMO_SETTINGS = {
-  unit:"33 Junta Distrital Ejecutiva del Instituto Nacional Electoral en el Estado de México",
+  unit:"Junta Distrital Ejecutiva 33 del Instituto Nacional Electoral en el Estado de México",
   contractStart:"2023-11-01",
   contractEnd:"2023-12-31",
   genericActivity:"Registrar, procesar y validar la información que se genera en los diversos sistemas informáticos que integran el multisistema ELEC y ELEC MOVIL, correspondiente al proceso de reclutamiento y seguimiento de supervisoras/es electorales (SE) y capacitadoras/es-asistentes electorales (CAE) de las actividades que desarrollan las y los SE y CAE, así como el proceso de integración de mesas directivas de casilla y de la capacitación electoral.",
@@ -150,6 +150,7 @@ function previewHTML(){
     <div class="paper-box paper-activities"><ul>${acts||"<li>Sin actividades capturadas</li>"}</ul></div>
     <div class="paper-signers"><div>Elaboró<strong>${safe(p.name)}</strong>El Prestador del Servicio</div>
     <div>Revisó por parte del INE<strong>${safe(s.reviewer)}</strong>${safe(s.reviewerRole)}</div></div>
+    <div class="paper-legal">Firmado electrónicamente en términos de los artículos 10 y 22 del Reglamento para el Uso y Operación de la Firma Electrónica Avanzada en el Instituto Nacional Electoral</div>
   </div>`;
 }
 function formatDate(v){ if(!v)return "—"; const [y,m,d]=v.split("-"); return `${d}/${m}/${y}`; }
