@@ -45,7 +45,7 @@ function renderSignedReports(){
   $("#signedTable tbody").innerHTML=rows.map(r=>`
     <tr>
       <td>${safe(r.period)}</td>
-      <td>${r.driveUrl?`<a href="${r.driveUrl}" target="_blank" rel="noopener">${safe(r.fileName)}</a>`:safe(r.fileName)}</td>
+      <td>${r.driveUrl?`<a class="drive-link" href="${r.driveUrl}" target="_blank" rel="noopener" title="${safe(r.fileName)}">Abrir PDF</a>`:safe(r.fileName)}</td>
       <td>${new Date(r.createdAt).toLocaleString("es-MX")}</td>
       <td><span class="status-pill-ok">Enviado</span></td>
     </tr>`).join("");
@@ -156,12 +156,12 @@ async function uploadSignedReport(){
     state.signedReports.unshift(record);
     localStorage.setItem(key,JSON.stringify(state.signedReports));
 
-    $("#signedUploadStatus").className="signed-status sent";
-    $("#signedUploadStatus").innerHTML="<strong>Informe enviado correctamente</strong><span>El PDF quedó archivado en Google Drive.</span>";
     state.signedFile=null;
     $("#signedFileInput").value="";
     renderSignedFile();
     renderSignedReports();
+    $("#signedUploadStatus").className="signed-status sent";
+    $("#signedUploadStatus").innerHTML="<strong>Informe enviado correctamente</strong><span>El PDF quedó archivado en Google Drive.</span>";
     toast("Informe firmado guardado en Google Drive.");
   }catch(err){
     console.error("Error al enviar informe firmado:",err);
@@ -224,6 +224,93 @@ async function createUser(e){
   await firebase.setDoc(firebase.doc(firebase.db,"users",cred.user.uid),userData);await firebase.signOut(firebase.secondaryAuth);
   await loadUsers();e.target.reset();toast("Usuario creado.");
 }
+let pendingBulkUsers=[];
+
+function splitCsvLine(line, delimiter){
+  const out=[]; let cur=""; let quoted=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){
+      if(quoted && line[i+1]==='"'){cur+='"';i++;} else quoted=!quoted;
+    }else if(ch===delimiter && !quoted){out.push(cur.trim());cur="";}
+    else cur+=ch;
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+function parseUsersCsv(text){
+  const lines=String(text||"").replace(/^\uFEFF/,"").split(/\r?\n/).filter(x=>x.trim());
+  if(lines.length<2) throw new Error("El CSV no contiene registros.");
+  const delimiter=(lines[0].split(";").length>lines[0].split(",").length)?";":",";
+  const headers=splitCsvLine(lines[0],delimiter).map(h=>h.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim());
+  const required=["nombre","usuario","contrasena","codigo","contrato"];
+  required.forEach(h=>{if(!headers.includes(h)) throw new Error("Falta la columna: "+h);});
+  const rows=[]; const seen=new Set();
+  for(let i=1;i<lines.length;i++){
+    const vals=splitCsvLine(lines[i],delimiter); const obj={};
+    headers.forEach((h,n)=>obj[h]=vals[n]||"");
+    const u={
+      name:(obj.nombre||"").trim(),
+      username:(obj.usuario||"").trim().toLowerCase(),
+      password:(obj.contrasena||"").trim(),
+      code:(obj.codigo||"").trim(),
+      contract:(obj.contrato||"").trim(),
+      role:(obj.rol||"user").trim().toLowerCase()==="admin"?"admin":"user",
+      active:true,row:i+1
+    };
+    if(!u.name||!u.username||!u.password||!u.code||!u.contract) throw new Error("Fila "+u.row+": hay datos obligatorios vacíos.");
+    if(u.password.length<6) throw new Error("Fila "+u.row+": la contraseña debe tener al menos 6 caracteres.");
+    if(seen.has(u.username)) throw new Error("Usuario duplicado en el CSV: "+u.username);
+    seen.add(u.username); rows.push(u);
+  }
+  return rows;
+}
+
+function renderBulkPreview(){
+  const box=$("#bulkUsersPreview"); if(!box) return;
+  if(!pendingBulkUsers.length){box.classList.add("hidden");box.innerHTML="";$("#importUsersBtn").disabled=true;return;}
+  const sample=pendingBulkUsers.slice(0,5);
+  box.classList.remove("hidden");
+  box.innerHTML="<strong>"+pendingBulkUsers.length+" usuarios listos para importar</strong>"+
+    "<div class=\"table-wrap\"><table class=\"data-table compact-table\"><thead><tr><th>Nombre</th><th>Usuario</th><th>Código</th><th>Rol</th></tr></thead><tbody>"+
+    sample.map(u=>"<tr><td>"+safe(u.name)+"</td><td>"+safe(u.username)+"</td><td>"+safe(u.code)+"</td><td>"+safe(u.role)+"</td></tr>").join("")+
+    "</tbody></table></div>"+(pendingBulkUsers.length>5?"<span class=\"muted small\">Vista previa de los primeros 5 registros.</span>":"");
+  $("#importUsersBtn").disabled=false;
+}
+
+function downloadUsersTemplate(){
+  const content="nombre,usuario,contraseña,codigo,contrato,rol\nKarla Villegas Arana,karla.villegas,Temporal2027,27C3082,PE-HE-000000,user";
+  const blob=new Blob(["\uFEFF"+content],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob); const a=document.createElement("a");
+  a.href=url;a.download="plantilla_prestadores.csv";document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+
+async function importBulkUsers(){
+  if(!pendingBulkUsers.length) return;
+  const btn=$("#importUsersBtn"),status=$("#bulkUsersStatus");btn.disabled=true;
+  let ok=0,failed=0; const errors=[];
+  for(let i=0;i<pendingBulkUsers.length;i++){
+    const u=pendingBulkUsers[i]; status.textContent="Importando "+(i+1)+" de "+pendingBulkUsers.length+"…";
+    try{
+      if(DEMO_MODE){
+        if(state.users.some(x=>x.username===u.username)) throw new Error("usuario ya existente");
+        state.users.push({uid:"demo-"+Date.now()+"-"+i,...u});
+      }else{
+        const cred=await firebase.createUserWithEmailAndPassword(firebase.secondaryAuth,usernameEmail(u.username),u.password);
+        await firebase.setDoc(firebase.doc(firebase.db,"users",cred.user.uid),{name:u.name,username:u.username,code:u.code,contract:u.contract,role:u.role,active:true});
+        await firebase.signOut(firebase.secondaryAuth);
+      }
+      ok++;
+    }catch(err){failed++;errors.push(u.username+": "+(err?.message||"error"));try{if(!DEMO_MODE)await firebase.signOut(firebase.secondaryAuth);}catch{}}
+    await new Promise(r=>setTimeout(r,120));
+  }
+  if(!DEMO_MODE) await loadUsers(); else renderUsersTable();
+  pendingBulkUsers=[];$("#bulkUsersInput").value="";renderBulkPreview();
+  status.textContent=failed?("Importación terminada: "+ok+" creados, "+failed+" con error. "+errors.slice(0,3).join(" | ")):("Importación terminada: "+ok+" usuarios creados correctamente.");
+  toast(failed?("Se crearon "+ok+" usuarios; "+failed+" tuvieron error."):("Se crearon "+ok+" usuarios correctamente."));
+}
 async function saveSettings(e){
   e.preventDefault(); const data={unit:$("#sUnit").value.trim(),contractStart:$("#sStart").value,contractEnd:$("#sEnd").value,genericActivity:$("#sGeneric").value.trim(),reviewer:$("#sReviewer").value.trim(),reviewerRole:$("#sReviewerRole").value.trim()};
   state.settings=data;
@@ -259,6 +346,9 @@ $("#signedFileInput").addEventListener("change",e=>{ const f=e.target.files?.[0]
 $("#removeSignedFileBtn").addEventListener("click",()=>{state.signedFile=null;$("#signedFileInput").value="";renderSignedFile();});
 $("#uploadSignedBtn").addEventListener("click",uploadSignedReport);
 $("#userForm").addEventListener("submit",createUser);$("#settingsForm").addEventListener("submit",saveSettings);
+$("#downloadUsersTemplateBtn")?.addEventListener("click",downloadUsersTemplate);
+$("#bulkUsersInput")?.addEventListener("change",async e=>{try{const f=e.target.files?.[0];if(!f)return;pendingBulkUsers=parseUsersCsv(await f.text());renderBulkPreview();$("#bulkUsersStatus").textContent="";}catch(err){pendingBulkUsers=[];renderBulkPreview();$("#bulkUsersStatus").textContent=err?.message||"No se pudo leer el CSV.";toast(err?.message||"No se pudo leer el CSV.");}});
+$("#importUsersBtn")?.addEventListener("click",importBulkUsers);
 
 fillPeriodControls(); fillSignedPeriodControls(); renderActivities();
 $("#demoHint").classList.toggle("hidden",!DEMO_MODE);
