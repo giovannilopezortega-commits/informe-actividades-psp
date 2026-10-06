@@ -317,7 +317,7 @@ async function importBulkUsers(){
 function loadPositionCatalogForm(){
   if(!$("#catalogPositionSelect")) return;
   const pos=$("#catalogPositionSelect").value || "SE";
-  const cfg=state.settings.positions?.[pos] || {genericActivity:"",developedActivities:[]};
+  const cfg=positionConfig(pos);
   $("#catalogGenericActivity").value=cfg.genericActivity||"";
   $("#catalogDevelopedActivities").value=(cfg.developedActivities||[]).join("\n");
 }
@@ -339,7 +339,7 @@ async function savePositionCatalog(){
 }
 async function saveSettings(e){
   e.preventDefault(); const data={unit:$("#sUnit").value.trim(),contractStart:$("#sStart").value,contractEnd:$("#sEnd").value,genericActivity:$("#sGeneric").value.trim(),reviewer:$("#sReviewer").value.trim(),reviewerRole:$("#sReviewerRole").value.trim()};
-  state.settings=data;
+  state.settings={...state.settings,...data};
   if(!DEMO_MODE)await firebase.setDoc(firebase.doc(firebase.db,"config","institution"),data,{merge:true});
   renderProfile();toast("Configuración guardada.");
 }
