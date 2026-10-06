@@ -84,11 +84,19 @@ function positionLabel(pos=currentPosition()){
     "Validador":"Validador de Captura"
   })[pos] || pos;
 }
+function positionConfig(pos){
+  const configured=state.settings?.positions?.[pos] || {};
+  const defaults=DEMO_SETTINGS.positions[pos] || {};
+  const activities=Array.isArray(configured.developedActivities)
+    ? configured.developedActivities.filter(a=>typeof a==="string" && a.trim())
+    : [];
+  return {
+    genericActivity:configured.genericActivity || defaults.genericActivity || state.settings?.genericActivity || "",
+    developedActivities:activities.length ? activities : (defaults.developedActivities || [])
+  };
+}
 function currentPositionConfig(){
-  const pos=currentPosition();
-  const configured=state.settings?.positions?.[pos];
-  if(configured) return {genericActivity:configured.genericActivity||"",developedActivities:Array.isArray(configured.developedActivities)?configured.developedActivities:[]};
-  return {genericActivity:state.settings?.genericActivity||"",developedActivities:[]};
+  return positionConfig(currentPosition());
 }
 function genericActivityTitle(){
   const pos=currentPosition();
