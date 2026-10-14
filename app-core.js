@@ -31,10 +31,67 @@ const DEMO_USERS = [
 ];
 
 let firebase = null;
+const DEMO_USERS_STORAGE_KEY="informeDemoUsersV1";
+const DEMO_PASSWORD_ITERATIONS=210000;
+let demoUserStorageError="";
 let state = {
   user:null, profile:null, settings:{...DEMO_SETTINGS}, evidenceFiles:[], activities:[""], history:[],
-  users:[...DEMO_USERS], signedFile:null, signedReports:[]
+  users:loadDemoUsers(), signedFile:null, signedReports:[]
 };
+
+function loadDemoUsers(){
+  if(!DEMO_MODE) return [...DEMO_USERS];
+  try{
+    const raw=localStorage.getItem(DEMO_USERS_STORAGE_KEY);
+    if(!raw){ demoUserStorageError=""; return [...DEMO_USERS]; }
+    const saved=JSON.parse(raw);
+    if(saved.version!==1 || !Array.isArray(saved.users)) throw new Error("Formato no válido");
+    if(saved.users.some(u=>!u || typeof u.uid!=="string" || typeof u.username!=="string" ||
+      typeof u.passwordHash!=="string" || typeof u.passwordSalt!=="string" ||
+      u.passwordIterations!==DEMO_PASSWORD_ITERATIONS)) throw new Error("Registro no válido");
+    demoUserStorageError="";
+    return [...DEMO_USERS,...saved.users.filter(u=>!DEMO_USERS.some(base=>base.username===u.username))];
+  }catch(err){
+    demoUserStorageError="No se pudieron leer los usuarios guardados en este navegador. No se han sobrescrito los datos.";
+    return [...DEMO_USERS];
+  }
+}
+function bytesToBase64(bytes){return btoa(String.fromCharCode(...bytes));}
+function base64ToBytes(text){return Uint8Array.from(atob(text),c=>c.charCodeAt(0));}
+async function demoPasswordHash(password,salt,iterations=DEMO_PASSWORD_ITERATIONS){
+  const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveBits"]);
+  const bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt,iterations,hash:"SHA-256"},key,256);
+  return new Uint8Array(bits);
+}
+async function verifyDemoPassword(user,password){
+  if(!user || user.active===false) return false;
+  // Las dos cuentas incluidas con la demostración siguen siendo compatibles.
+  if(DEMO_USERS.some(base=>base.uid===user.uid)) return user.password===password;
+  if(!user.passwordHash || !user.passwordSalt) return false;
+  const expected=base64ToBytes(user.passwordHash);
+  const actual=await demoPasswordHash(password,base64ToBytes(user.passwordSalt),user.passwordIterations);
+  return expected.length===actual.length && actual.reduce((diff,b,i)=>diff|(b^expected[i]),0)===0;
+}
+async function createDemoUser(userData,password){
+  if(state.profile?.role!=="admin") throw new Error("Solo el administrador puede crear usuarios.");
+  if(password.length<6) throw new Error("La contraseña debe tener al menos 6 caracteres.");
+  const username=String(userData.username||"").trim().toLowerCase();
+  if(!username) throw new Error("Captura un nombre de usuario.");
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const hash=await demoPasswordHash(password,salt);
+  // Volver a leer evita descartar las altas de otra pestaña del navegador.
+  const users=loadDemoUsers();
+  if(demoUserStorageError) throw new Error(demoUserStorageError);
+  if(users.some(u=>u.username===username)) throw new Error("Ese nombre de usuario ya existe.");
+  const {password:ignoredPassword,...profile}=userData;
+  const user={...profile,uid:"demo-"+crypto.randomUUID(),username,passwordHash:bytesToBase64(hash),passwordSalt:bytesToBase64(salt),passwordIterations:DEMO_PASSWORD_ITERATIONS};
+  const next=[...users,user];
+  const saved=next.filter(u=>!DEMO_USERS.some(base=>base.uid===u.uid));
+  try{localStorage.setItem(DEMO_USERS_STORAGE_KEY,JSON.stringify({version:1,users:saved}));}
+  catch{throw new Error("No se pudo guardar el usuario en este navegador. Comprueba el espacio y los permisos de almacenamiento.");}
+  state.users=next;
+  return user;
+}
 
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove("show"),2700); }
 function safe(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
@@ -255,6 +312,7 @@ function previewHTML(){
   </div>`;
 }
 function formatDate(v){ if(!v)return "—"; const [y,m,d]=v.split("-"); return `${d}/${m}/${y}`; }
+
 
 
 

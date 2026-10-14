@@ -221,7 +221,11 @@ async function createUser(e){
   e.preventDefault();
   const userData={name:$("#aName").value.trim(),username:$("#aUsername").value.trim().toLowerCase(),code:$("#aCode").value.trim(),contract:$("#aContract").value.trim(),position:$("#aPosition").value,role:$("#aRole").value,active:true};
   const pwd=$("#aPassword").value;
-  if(DEMO_MODE){state.users.push({uid:"demo-"+Date.now(),password:pwd,...userData});renderUsersTable();e.target.reset();toast("Usuario creado en modo demostración.");return;}
+  if(DEMO_MODE){
+    try{await createDemoUser(userData,pwd);renderUsersTable();e.target.reset();toast("Usuario de prueba guardado en este navegador.");}
+    catch(err){toast(err.message||"No se pudo crear el usuario.");}
+    return;
+  }
   const cred=await firebase.createUserWithEmailAndPassword(firebase.secondaryAuth,usernameEmail(userData.username),pwd);
   await firebase.setDoc(firebase.doc(firebase.db,"users",cred.user.uid),userData);await firebase.signOut(firebase.secondaryAuth);
   await loadUsers();e.target.reset();toast("Usuario creado.");
@@ -299,8 +303,8 @@ async function importBulkUsers(){
     const u=pendingBulkUsers[i]; status.textContent="Importando "+(i+1)+" de "+pendingBulkUsers.length+"…";
     try{
       if(DEMO_MODE){
-        if(state.users.some(x=>x.username===u.username)) throw new Error("usuario ya existente");
-        state.users.push({uid:"demo-"+Date.now()+"-"+i,...u});
+        const {password,row,...profile}=u;
+        await createDemoUser(profile,password);
       }else{
         const cred=await firebase.createUserWithEmailAndPassword(firebase.secondaryAuth,usernameEmail(u.username),u.password);
         await firebase.setDoc(firebase.doc(firebase.db,"users",cred.user.uid),{name:u.name,username:u.username,code:u.code,contract:u.contract,position:u.position,role:u.role,active:true});
@@ -350,8 +354,12 @@ $("#loginForm").addEventListener("submit",async e=>{
   e.preventDefault(); const username=$("#username").value.trim().toLowerCase(),pwd=$("#password").value;
   try{
     if(DEMO_MODE){
-      const u=state.users.find(x=>x.username===username&&x.password===pwd&&x.active!==false);if(!u)throw new Error("Usuario o contraseña incorrectos.");
-      state.user={uid:u.uid};state.profile={...u};state.history=JSON.parse(localStorage.getItem("demoHistory")||"[]");state.signedReports=JSON.parse(localStorage.getItem(`signedReports_${u.uid}`)||"[]");showApp();
+      state.users=loadDemoUsers();
+      if(demoUserStorageError) throw new Error(demoUserStorageError);
+      const u=state.users.find(x=>x.username===username);
+      if(!await verifyDemoPassword(u,pwd)) throw new Error("Usuario o contraseña incorrectos.");
+      const {password,passwordHash,passwordSalt,passwordIterations,...profile}=u;
+      state.user={uid:u.uid};state.profile=profile;state.history=JSON.parse(localStorage.getItem("demoHistory")||"[]");state.signedReports=JSON.parse(localStorage.getItem(`signedReports_${u.uid}`)||"[]");showApp();
     }else await firebase.signInWithEmailAndPassword(firebase.auth,usernameEmail(username),pwd);
   }catch(err){toast(err.message||"No fue posible iniciar sesión.");}
 });
@@ -384,5 +392,6 @@ $("#savePositionCatalogBtn")?.addEventListener("click",savePositionCatalog);
 fillPeriodControls(); fillSignedPeriodControls(); renderActivities();
 $("#demoHint").classList.toggle("hidden",!DEMO_MODE);
 initFirebase().catch(err=>{console.error(err);toast("Error al inicializar Firebase: "+err.message)});
+
 
 

@@ -3,7 +3,7 @@ const vm=require('node:vm');
 const assert=require('node:assert/strict');
 const nodes=new Map();
 const node=s=>{if(!nodes.has(s))nodes.set(s,{value:'',innerHTML:'',disabled:false,textContent:''});return nodes.get(s);};
-const ctx={window:{APP_CONFIG:{DEMO_MODE:true}},document:{querySelector:node,querySelectorAll:()=>[]},console};
+const ctx={localStorage:{getItem:()=>null},window:{APP_CONFIG:{DEMO_MODE:true}},document:{querySelector:node,querySelectorAll:()=>[]},console};
 vm.createContext(ctx);
 vm.runInContext(readFileSync(__dirname+'/activity-catalogs.js','utf8'),ctx);
 vm.runInContext(readFileSync(__dirname+'/app-core.js','utf8'),ctx);
@@ -43,3 +43,4 @@ get(`savePositionCatalog()`).then(()=>{
  assert.equal(get(`currentPositionConfig().genericActivity`),'Genérica personalizada');
  console.log('PASS: 38 actividades técnicas, 21 de validación, 18 de voz y datos; selección por perfil, CSV, actualización de catálogos anteriores y personalizaciones.');
 }).catch(e=>{console.error(e);process.exitCode=1;});
+

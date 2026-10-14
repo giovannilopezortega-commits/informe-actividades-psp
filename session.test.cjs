@@ -8,7 +8,7 @@ function element(id){
 const ids=['formTab','historyTab','signedTab','adminTab'];
 const panels=ids.map(element),tabs=ids.map(id=>({...element('tab-'+id),dataset:{tab:id}}));
 const nodes=new Map(panels.map(x=>['#'+x.id,x]));
-const sandbox={window:{APP_CONFIG:{DEMO_MODE:true}},document:{querySelector(s){if(!nodes.has(s))nodes.set(s,element(s));return nodes.get(s);},querySelectorAll(s){return s==='.tab'?tabs:s==='.tab-panel'?panels:[];}},console,setTimeout,clearTimeout};
+const sandbox={localStorage:{getItem:()=>null},window:{APP_CONFIG:{DEMO_MODE:true}},document:{querySelector(s){if(!nodes.has(s))nodes.set(s,element(s));return nodes.get(s);},querySelectorAll(s){return s==='.tab'?tabs:s==='.tab-panel'?panels:[];}},console,setTimeout,clearTimeout};
 vm.createContext(sandbox);
 vm.runInContext(readFileSync(__dirname+'/app-core.js','utf8'),sandbox);
 vm.runInContext(`
@@ -39,3 +39,4 @@ const data=readFileSync(__dirname+'/app-data.js','utf8');
 vm.runInContext(data.slice(data.indexOf('async function loadUsers(){'),data.indexOf('function renderUsersTable(){')),sandbox);
 vm.runInContext(`state.profile={role:'user'};firebase={getDocs(){throw Error('No debe consultar usuarios');}};`,sandbox);
 vm.runInContext(`loadUsers()`,sandbox).then(()=>console.log('PASS: cambio admin a prestador, pestaña inicial, bloqueo administrativo y limpieza de sesión.')).catch(e=>{console.error(e);process.exitCode=1;});
+
