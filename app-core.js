@@ -96,7 +96,13 @@ async function createDemoUser(userData,password){
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove("show"),2700); }
 function safe(s=""){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
 function fileSize(n){ if(n<1024)return n+" B"; if(n<1024**2)return (n/1024).toFixed(1)+" KB"; return (n/1024**2).toFixed(1)+" MB"; }
-function usernameEmail(username){ return `${username.trim().toLowerCase().replace(/[^a-z0-9._-]/g,"")}@${INTERNAL_EMAIL_DOMAIN}`; }
+function usernameEmail(username){
+  const value=String(username||"").trim().toLowerCase();
+  const suffix="@"+INTERNAL_EMAIL_DOMAIN;
+  const local=value.endsWith(suffix)?value.slice(0,-suffix.length):value;
+  if(!/^[a-z0-9._-]+$/.test(local)) throw new Error("Escribe tu usuario o el correo interno asignado, sin espacios.");
+  return local+suffix;
+}
 
 async function initFirebase(){
   if(DEMO_MODE) return;

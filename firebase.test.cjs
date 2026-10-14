@@ -8,6 +8,10 @@ run(fs.readFileSync(__dirname+'/app-core.js','utf8'));
 run(fs.readFileSync(__dirname+'/app-data.js','utf8').replace(/initFirebase\(\)\.catch[^\n]+/g,''));
 (async()=>{
  assert.equal(run('state.users.length'),0);
+ assert.equal(run("usernameEmail(' ADMIN ')"),'admin@informes.local');
+ assert.equal(run("usernameEmail(' ADMIN@INFORMES.LOCAL ')"),'admin@informes.local');
+ assert.throws(()=>run("usernameEmail('admin@gmail.com')"),/usuario/);
+ assert.throws(()=>run("usernameEmail('ad min')"),/usuario/);
  run(`window.calls=[];firebase={secondaryAuth:'secondary',db:'db',doc:(...x)=>x,createUserWithEmailAndPassword:async(...args)=>{window.calls.push(args);return {user:{uid:'new'}}},setDoc:async(...args)=>window.calls.push(args),signOut:async a=>window.calls.push(['out',a]),deleteUser:async()=>window.calls.push(['rollback'])};state.profile={role:'admin'};`);
  assert.equal(await run(`createFirebaseUser({username:' NUEVO ',role:'user',active:true},'fixture')`),'new');
  assert.equal(context.window.calls[0][0],'secondary');assert.equal(context.window.calls[0][1],'nuevo@informes.local');
