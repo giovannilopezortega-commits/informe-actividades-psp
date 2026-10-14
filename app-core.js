@@ -4,7 +4,7 @@ const { DEMO_MODE, firebaseConfig, INTERNAL_EMAIL_DOMAIN } = window.APP_CONFIG;
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-const POSITION_TYPES = ["SE","CAE","Técnico","Validador"];
+const POSITION_TYPES = ["SE","CAE","Técnico","Validador","Técnico de Voz y Datos"];
 const ACTIVITY_CATALOGS = window.ACTIVITY_CATALOGS || {};
 
 const DEMO_SETTINGS = {
@@ -15,8 +15,9 @@ const DEMO_SETTINGS = {
   positions:{
     "SE":ACTIVITY_CATALOGS.SE || {genericActivity:"",developedActivities:[]},
     "CAE":ACTIVITY_CATALOGS.CAE || {genericActivity:"",developedActivities:[]},
-    "Técnico":{genericActivity:"",developedActivities:[]},
-    "Validador":{
+    "Técnico":ACTIVITY_CATALOGS["Técnico"] || {genericActivity:"",developedActivities:[]},
+    "Técnico de Voz y Datos":ACTIVITY_CATALOGS["Técnico de Voz y Datos"] || {genericActivity:"",developedActivities:[]},
+    "Validador":ACTIVITY_CATALOGS.Validador || {
       genericActivity:"Registrar, procesar y validar la información que se genera en los diversos sistemas informáticos que integran el multisistema ELEC y ELEC MOVIL, correspondiente al proceso de reclutamiento y seguimiento de supervisoras/es electorales (SE) y capacitadoras/es-asistentes electorales (CAE) de las actividades que desarrollan las y los SE y CAE, así como el proceso de integración de mesas directivas de casilla y de la capacitación electoral.",
       developedActivities:[]
     }
@@ -88,10 +89,23 @@ function showApp(){
   $("#loginView").classList.add("hidden"); $("#appView").classList.remove("hidden");
   renderProfile(); renderActivities(); renderEvidence(); renderHistory(); renderSignedSection(); renderAdmin();
 }
+function normalizePosition(pos){
+  const key=String(pos||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  const aliases={
+    "se":"SE", "supervisor electoral":"SE",
+    "cae":"CAE", "capacitador-asistente electoral":"CAE",
+    "tecnico":"Técnico", "tecnico en capacitacion electoral":"Técnico", "tecnico/a en capacitacion electoral":"Técnico",
+    "validador":"Validador", "validador de captura":"Validador", "validador/a de captura":"Validador",
+    "tecnico de voz y datos":"Técnico de Voz y Datos", "tecnico/a de voz y datos":"Técnico de Voz y Datos"
+  };
+  return aliases[key] || String(pos||"").trim();
+}
 function currentPosition(){
-  return state.profile?.position || "Validador";
+  return normalizePosition(state.profile?.position || "Validador");
 }
 function positionLabel(pos=currentPosition()){
+  pos=normalizePosition(pos);
+  if(ACTIVITY_CATALOGS[pos]?.label) return ACTIVITY_CATALOGS[pos].label;
   return ({
     "SE":"Supervisor Electoral",
     "CAE":"Capacitador-Asistente Electoral",
@@ -100,8 +114,12 @@ function positionLabel(pos=currentPosition()){
   })[pos] || pos;
 }
 function positionConfig(pos){
-  const configured=state.settings?.positions?.[pos] || {};
+  pos=normalizePosition(pos);
+  let configured=state.settings?.positions?.[pos] || {};
   const defaults=DEMO_SETTINGS.positions[pos] || {};
+  // Los catálogos anteriores al procedimiento se sustituyen al leerlos, sin escribir en Firestore.
+  // Las personalizaciones guardadas desde esta versión conservan su prioridad.
+  if(defaults.catalogVersion && configured.catalogVersion!==defaults.catalogVersion) configured=defaults;
   const activities=Array.isArray(configured.developedActivities)
     ? configured.developedActivities.filter(a=>typeof a==="string" && a.trim())
     : [];
@@ -116,7 +134,7 @@ function currentPositionConfig(){
 function genericActivityTitle(){
   const pos=currentPosition();
   if(pos==="Validador") return "Actividad Genérica del Validador de Captura";
-  if(pos==="Técnico") return "Actividad Genérica del Técnico";
+  if(pos==="Técnico") return "Actividad Genérica del Técnico en Capacitación Electoral";
   return "Actividad Genérica del "+positionLabel(pos);
 }
 function renderActivityCatalog(){
@@ -237,5 +255,6 @@ function previewHTML(){
   </div>`;
 }
 function formatDate(v){ if(!v)return "—"; const [y,m,d]=v.split("-"); return `${d}/${m}/${y}`; }
+
 
 

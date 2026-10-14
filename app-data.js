@@ -258,13 +258,13 @@ function parseUsersCsv(text){
       password:(obj.contrasena||"").trim(),
       code:(obj.codigo||"").trim(),
       contract:(obj.contrato||"").trim(),
-      position:(obj.puesto||"").trim(),
+      position:normalizePosition(obj.puesto),
       role:(obj.rol||"user").trim().toLowerCase()==="admin"?"admin":"user",
       active:true,row:i+1
     };
     if(!u.name||!u.username||!u.password||!u.code||!u.contract||!u.position) throw new Error("Fila "+u.row+": hay datos obligatorios vacíos.");
     if(u.password.length<6) throw new Error("Fila "+u.row+": la contraseña debe tener al menos 6 caracteres.");
-    if(!POSITION_TYPES.includes(u.position)) throw new Error("Fila "+u.row+": puesto no válido. Usa SE, CAE, Técnico o Validador.");
+    if(!POSITION_TYPES.includes(u.position)) throw new Error("Fila "+u.row+": puesto no válido. Usa SE, CAE, Técnico, Validador o Técnico de Voz y Datos.");
     if(seen.has(u.username)) throw new Error("Usuario duplicado en el CSV: "+u.username);
     seen.add(u.username); rows.push(u);
   }
@@ -326,6 +326,7 @@ async function savePositionCatalog(){
   const pos=$("#catalogPositionSelect").value;
   if(!state.settings.positions) state.settings.positions={};
   state.settings.positions[pos]={
+    ...(DEMO_SETTINGS.positions[pos]?.catalogVersion ? {catalogVersion:DEMO_SETTINGS.positions[pos].catalogVersion} : {}),
     genericActivity:$("#catalogGenericActivity").value.trim(),
     developedActivities:$("#catalogDevelopedActivities").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean)
   };
@@ -383,4 +384,5 @@ $("#savePositionCatalogBtn")?.addEventListener("click",savePositionCatalog);
 fillPeriodControls(); fillSignedPeriodControls(); renderActivities();
 $("#demoHint").classList.toggle("hidden",!DEMO_MODE);
 initFirebase().catch(err=>{console.error(err);toast("Error al inicializar Firebase: "+err.message)});
+
 
