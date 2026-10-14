@@ -1,0 +1,41 @@
+const {readFileSync}=require('node:fs');
+const vm=require('node:vm');
+const assert=require('node:assert/strict');
+function element(id){
+  const classes=new Set();
+  return {id,dataset:{},value:'',innerHTML:'',textContent:'',classList:{add:c=>classes.add(c),remove:c=>classes.delete(c),contains:c=>classes.has(c),toggle(c,on){if(on===undefined)on=!classes.has(c);on?classes.add(c):classes.delete(c);}}};
+}
+const ids=['formTab','historyTab','signedTab','adminTab'];
+const panels=ids.map(element),tabs=ids.map(id=>({...element('tab-'+id),dataset:{tab:id}}));
+const nodes=new Map(panels.map(x=>['#'+x.id,x]));
+const sandbox={window:{APP_CONFIG:{DEMO_MODE:true}},document:{querySelector(s){if(!nodes.has(s))nodes.set(s,element(s));return nodes.get(s);},querySelectorAll(s){return s==='.tab'?tabs:s==='.tab-panel'?panels:[];}},console,setTimeout,clearTimeout};
+vm.createContext(sandbox);
+vm.runInContext(readFileSync(__dirname+'/app-core.js','utf8'),sandbox);
+vm.runInContext(`
+renderActivities=renderEvidence=renderHistory=renderSignedSection=renderAdmin=()=>{};
+updatePeriodPreview=renderActivityCatalog=()=>{};
+state.profile={role:'admin',name:'Admin',code:'ADMIN'};
+showApp();showTab('adminTab');
+`,sandbox);
+assert(nodes.get('#adminTab').classList.contains('active'));
+vm.runInContext(`state.activities=['Texto privado'];state.evidenceFiles=[{}];state.signedFile={};state.history=[{}];state.signedReports=[{}];$('#usersTable tbody').innerHTML='datos';$('#reportPreview').innerHTML='informe';showLogin();`,sandbox);
+assert(nodes.get('#adminTab').classList.contains('hidden'));
+assert(!nodes.get('#adminTab').classList.contains('active'));
+assert.equal(nodes.get('#usersTable tbody').innerHTML,'');
+assert.equal(nodes.get('#reportPreview').innerHTML,'');
+assert(vm.runInContext(`state.profile===null&&state.history.length===0&&state.evidenceFiles.length===0&&state.signedReports.length===0`,sandbox));
+vm.runInContext(`state.profile={role:'user',name:'Prueba',code:'SE01',position:'SE'};showApp();`,sandbox);
+assert(nodes.get('#formTab').classList.contains('active'));
+assert(nodes.get('#adminTab').classList.contains('hidden'));
+assert(nodes.get('#adminBtn').classList.contains('hidden'));
+assert(nodes.get('#adminTabButton').classList.contains('hidden'));
+vm.runInContext(`showTab('adminTab')`,sandbox);
+assert(nodes.get('#formTab').classList.contains('active'));
+assert(!nodes.get('#adminTab').classList.contains('active'));
+vm.runInContext(`state.profile={role:'admin',name:'Admin',code:'ADMIN'};showApp();showTab('adminTab');`,sandbox);
+assert(!nodes.get('#adminTab').classList.contains('hidden'));
+assert(nodes.get('#adminTab').classList.contains('active'));
+const data=readFileSync(__dirname+'/app-data.js','utf8');
+vm.runInContext(data.slice(data.indexOf('async function loadUsers(){'),data.indexOf('function renderUsersTable(){')),sandbox);
+vm.runInContext(`state.profile={role:'user'};firebase={getDocs(){throw Error('No debe consultar usuarios');}};`,sandbox);
+vm.runInContext(`loadUsers()`,sandbox).then(()=>console.log('PASS: cambio admin a prestador, pestaña inicial, bloqueo administrativo y limpieza de sesión.')).catch(e=>{console.error(e);process.exitCode=1;});

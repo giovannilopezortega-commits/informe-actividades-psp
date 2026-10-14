@@ -210,6 +210,7 @@ function renderAdmin(){
   loadPositionCatalogForm();
 }
 async function loadUsers(){
+  if(state.profile?.role!=="admin") return;
   if(DEMO_MODE)return;
   const snap=await firebase.getDocs(firebase.collection(firebase.db,"users"));state.users=snap.docs.map(d=>({uid:d.id,...d.data()}));renderUsersTable();
 }
@@ -382,3 +383,4 @@ $("#savePositionCatalogBtn")?.addEventListener("click",savePositionCatalog);
 fillPeriodControls(); fillSignedPeriodControls(); renderActivities();
 $("#demoHint").classList.toggle("hidden",!DEMO_MODE);
 initFirebase().catch(err=>{console.error(err);toast("Error al inicializar Firebase: "+err.message)});
+

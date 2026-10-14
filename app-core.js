@@ -68,8 +68,23 @@ async function loadFirebaseProfile(user){
   if(s.exists()) state.settings={...DEMO_SETTINGS,...s.data()};
   await loadHistory();
 }
-function showLogin(){ $("#loginView").classList.remove("hidden"); $("#appView").classList.add("hidden"); }
+function showLogin(){
+  state.user=null; state.profile=null;
+  state.activities=[""]; state.evidenceFiles=[]; state.signedFile=null;
+  state.history=[]; state.signedReports=[];
+  $("#adminTab").classList.add("hidden");
+  $("#adminBtn").classList.add("hidden"); $("#adminTabButton").classList.add("hidden");
+  $("#usersTable tbody").innerHTML="";
+  $("#previewModal").classList.add("hidden"); $("#reportPreview").innerHTML="";
+  $("#password").value="";
+  showTab("formTab");
+  $("#loginView").classList.remove("hidden"); $("#appView").classList.add("hidden");
+}
 function showApp(){
+  state.activities=[""]; state.evidenceFiles=[]; state.signedFile=null;
+  $("#evidenceInput").value=""; $("#signedFileInput").value="";
+  $("#previewModal").classList.add("hidden"); $("#reportPreview").innerHTML="";
+  showTab("formTab");
   $("#loginView").classList.add("hidden"); $("#appView").classList.remove("hidden");
   renderProfile(); renderActivities(); renderEvidence(); renderHistory(); renderSignedSection(); renderAdmin();
 }
@@ -124,6 +139,7 @@ function renderProfile(){
   renderActivityCatalog();
   $("#reviewerName").textContent=s.reviewer; $("#reviewerRole").textContent=s.reviewerRole;
   const isAdmin=p.role==="admin"; $("#adminBtn").classList.toggle("hidden",!isAdmin); $("#adminTabButton").classList.toggle("hidden",!isAdmin);
+  $("#adminTab").classList.toggle("hidden",!isAdmin);
   updatePeriodPreview();
   if($("#signedUserName")) $("#signedUserName").textContent=p.name;
   if($("#signedUserCode")) $("#signedUserCode").textContent=p.code;
@@ -193,6 +209,7 @@ function addFiles(files){
   renderEvidence();
 }
 function showTab(id){
+  if(id==="adminTab" && state.profile?.role!=="admin") id="formTab";
   $$(".tab").forEach(x=>x.classList.toggle("active",x.dataset.tab===id));
   $$(".tab-panel").forEach(x=>x.classList.toggle("active",x.id===id));
 }
@@ -220,4 +237,5 @@ function previewHTML(){
   </div>`;
 }
 function formatDate(v){ if(!v)return "—"; const [y,m,d]=v.split("-"); return `${d}/${m}/${y}`; }
+
 
