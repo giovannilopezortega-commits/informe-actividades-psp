@@ -40,7 +40,7 @@ let state = {
 };
 
 function loadDemoUsers(){
-  if(!DEMO_MODE) return [...DEMO_USERS];
+  if(!DEMO_MODE) return [];
   try{
     const raw=localStorage.getItem(DEMO_USERS_STORAGE_KEY);
     if(!raw){ demoUserStorageError=""; return [...DEMO_USERS]; }
@@ -113,8 +113,13 @@ async function initFirebase(){
     ...authMod, ...fsMod, ...stMod
   };
   firebase.onAuthStateChanged(firebase.auth, async (user)=>{
-    if(user){ await loadFirebaseProfile(user); showApp(); }
-    else showLogin();
+    if(!user){showLogin();return;}
+    try{await loadFirebaseProfile(user);showApp();}
+    catch(err){
+      console.error("No se pudo cargar el perfil:",err);
+      try{await firebase.signOut(firebase.auth);}catch{}
+      showLogin();toast(authErrorMessage(err));
+    }
   });
 }
 async function loadFirebaseProfile(user){
@@ -122,9 +127,37 @@ async function loadFirebaseProfile(user){
   const snap=await firebase.getDoc(firebase.doc(firebase.db,"users",user.uid));
   if(!snap.exists()) throw new Error("El usuario no tiene perfil.");
   state.profile={uid:user.uid,...snap.data()};
+  if(state.profile.active!==true) throw new Error("Tu cuenta está inactiva. Contacta al administrador.");
   const s=await firebase.getDoc(firebase.doc(firebase.db,"config","institution"));
   if(s.exists()) state.settings={...DEMO_SETTINGS,...s.data()};
   await loadHistory();
+}
+function authErrorMessage(err){
+  const messages={
+    "auth/invalid-credential":"Usuario o contraseña incorrectos.",
+    "auth/user-not-found":"Usuario o contraseña incorrectos.",
+    "auth/wrong-password":"Usuario o contraseña incorrectos.",
+    "auth/email-already-in-use":"Ese usuario ya existe.",
+    "auth/weak-password":"Usa una contraseña de al menos 6 caracteres.",
+    "auth/too-many-requests":"Se hicieron demasiados intentos. Espera unos minutos y vuelve a intentar.",
+    "auth/network-request-failed":"No se pudo conectar. Revisa tu conexión a internet.",
+    "permission-denied":"No tienes permiso para realizar esta operación. Contacta al administrador."
+  };
+  return messages[err?.code] || err?.message || "No se pudo completar la operación.";
+}
+async function createFirebaseUser(userData,password){
+  if(state.profile?.role!=="admin") throw new Error("Solo el administrador puede crear usuarios.");
+  const username=String(userData.username||"").trim().toLowerCase();
+  if(!/^[a-z0-9._-]+$/.test(username)) throw new Error("El usuario solo puede llevar letras sin acentos, números, puntos, guiones o guion bajo.");
+  let created=null;
+  try{
+    created=await firebase.createUserWithEmailAndPassword(firebase.secondaryAuth,usernameEmail(username),password);
+    await firebase.setDoc(firebase.doc(firebase.db,"users",created.user.uid),{...userData,username});
+    return created.user.uid;
+  }catch(err){
+    if(created){try{await firebase.deleteUser(created.user);}catch(rollbackError){console.error("No se pudo revertir un alta incompleta:",rollbackError);}}
+    throw err;
+  }finally{await firebase.signOut(firebase.secondaryAuth);}
 }
 function showLogin(){
   state.user=null; state.profile=null;
@@ -312,6 +345,7 @@ function previewHTML(){
   </div>`;
 }
 function formatDate(v){ if(!v)return "—"; const [y,m,d]=v.split("-"); return `${d}/${m}/${y}`; }
+
 
 
 

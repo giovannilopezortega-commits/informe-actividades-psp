@@ -113,6 +113,7 @@ async function generatePdf(save=true){
     // Si no hay anexos, descargar directamente con jsPDF.
     if(state.evidenceFiles.length===0){
       if(save){
+        if(!DEMO_MODE){await saveFirebaseReport(doc.output("blob"),fileName,activities);return;}
         doc.save(fileName);
         const record={period:periodText(),createdAt:new Date().toISOString(),activities:activities.length,fileName,url:null};
         if(DEMO_MODE){
@@ -199,3 +200,4 @@ function slug(s){
     .replace(/[^a-zA-Z0-9]+/g,"_")
     .replace(/^_|_$/g,"");
 }
+

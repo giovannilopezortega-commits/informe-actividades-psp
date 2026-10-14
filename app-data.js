@@ -174,6 +174,18 @@ async function uploadSignedReport(){
 }
 
 async function saveFirebaseReport(blob,fileName,activities){
+  if(window.APP_CONFIG.REPORT_STORAGE_ENABLED!==true){
+    await firebase.addDoc(firebase.collection(firebase.db,"reports"),{
+      uid:state.user.uid,name:state.profile.name,code:state.profile.code,period:periodText(),
+      month:+$("#monthSelect").value+1,year:+$("#yearSelect").value,activities,
+      createdAt:firebase.serverTimestamp(),fileName,pdfUrl:null,evidences:[],downloadOnly:true
+    });
+    const url=URL.createObjectURL(blob),a=document.createElement("a");
+    a.href=url;a.download=fileName;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    await loadHistory();renderHistory();toast("PDF descargado e historial guardado. Conserva el archivo en tu equipo.");
+    return;
+  }
   const uid=state.user.uid, ts=Date.now(), path=`reports/${uid}/${$("#yearSelect").value}/${String(+$("#monthSelect").value+1).padStart(2,"0")}/${ts}_${fileName}`;
   const ref=firebase.ref(firebase.storage,path); await firebase.uploadBytes(ref,blob,{contentType:"application/pdf"});
   const url=await firebase.getDownloadURL(ref);
@@ -191,8 +203,10 @@ async function saveFirebaseReport(blob,fileName,activities){
 }
 async function loadHistory(){
   if(DEMO_MODE){ state.history=JSON.parse(localStorage.getItem("demoHistory")||"[]"); return; }
-  let q=firebase.query(firebase.collection(firebase.db,"reports"),firebase.where("uid","==",state.user.uid),firebase.orderBy("createdAt","desc"));
-  const snap=await firebase.getDocs(q);state.history=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const q=firebase.query(firebase.collection(firebase.db,"reports"),firebase.where("uid","==",state.user.uid));
+  const snap=await firebase.getDocs(q);
+  const time=r=>r.createdAt?.toMillis?r.createdAt.toMillis():new Date(r.createdAt||0).getTime();
+  state.history=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>time(b)-time(a));
 }
 function renderHistory(){
   const rows=state.history;
@@ -200,7 +214,7 @@ function renderHistory(){
   $("#historyTable tbody").innerHTML=rows.map(r=>{
     const d=r.createdAt?.toDate?r.createdAt.toDate():new Date(r.createdAt);
     const count=Array.isArray(r.activities)?r.activities.length:r.activities;
-    return `<tr><td>${safe(r.period||"—")}</td><td>${isNaN(d)? "—":d.toLocaleString("es-MX")}</td><td>${count||0}</td><td>${r.pdfUrl?`<a href="${r.pdfUrl}" target="_blank">Abrir PDF</a>`:safe(r.fileName||"PDF descargado")}</td></tr>`
+    return `<tr><td>${safe(r.period||"—")}</td><td>${isNaN(d)? "—":d.toLocaleString("es-MX")}</td><td>${count||0}</td><td>${r.pdfUrl?`<a href="${r.pdfUrl}" target="_blank">Abrir PDF</a>`:safe(r.fileName||"PDF descargado")+(r.downloadOnly?"<br><small>Descargado al equipo donde se generó</small>":"")}</td></tr>`
   }).join("");
 }
 function renderAdmin(){
@@ -226,9 +240,8 @@ async function createUser(e){
     catch(err){toast(err.message||"No se pudo crear el usuario.");}
     return;
   }
-  const cred=await firebase.createUserWithEmailAndPassword(firebase.secondaryAuth,usernameEmail(userData.username),pwd);
-  await firebase.setDoc(firebase.doc(firebase.db,"users",cred.user.uid),userData);await firebase.signOut(firebase.secondaryAuth);
-  await loadUsers();e.target.reset();toast("Usuario creado.");
+  try{await createFirebaseUser(userData,pwd);await loadUsers();e.target.reset();toast("Usuario creado. Puede ingresar desde cualquier navegador.");}
+  catch(err){toast(authErrorMessage(err));}
 }
 let pendingBulkUsers=[];
 
@@ -306,9 +319,7 @@ async function importBulkUsers(){
         const {password,row,...profile}=u;
         await createDemoUser(profile,password);
       }else{
-        const cred=await firebase.createUserWithEmailAndPassword(firebase.secondaryAuth,usernameEmail(u.username),u.password);
-        await firebase.setDoc(firebase.doc(firebase.db,"users",cred.user.uid),{name:u.name,username:u.username,code:u.code,contract:u.contract,position:u.position,role:u.role,active:true});
-        await firebase.signOut(firebase.secondaryAuth);
+        await createFirebaseUser({name:u.name,username:u.username,code:u.code,contract:u.contract,position:u.position,role:u.role,active:true},u.password);
       }
       ok++;
     }catch(err){failed++;errors.push(u.username+": "+(err?.message||"error"));try{if(!DEMO_MODE)await firebase.signOut(firebase.secondaryAuth);}catch{}}
@@ -361,7 +372,7 @@ $("#loginForm").addEventListener("submit",async e=>{
       const {password,passwordHash,passwordSalt,passwordIterations,...profile}=u;
       state.user={uid:u.uid};state.profile=profile;state.history=JSON.parse(localStorage.getItem("demoHistory")||"[]");state.signedReports=JSON.parse(localStorage.getItem(`signedReports_${u.uid}`)||"[]");showApp();
     }else await firebase.signInWithEmailAndPassword(firebase.auth,usernameEmail(username),pwd);
-  }catch(err){toast(err.message||"No fue posible iniciar sesión.");}
+  }catch(err){toast(authErrorMessage(err));}
 });
 $("#togglePassword").addEventListener("click",()=>$("#password").type=$("#password").type==="password"?"text":"password");
 $("#logoutBtn").addEventListener("click",async()=>{if(DEMO_MODE){state.user=state.profile=null;showLogin()}else await firebase.signOut(firebase.auth)});
@@ -392,6 +403,7 @@ $("#savePositionCatalogBtn")?.addEventListener("click",savePositionCatalog);
 fillPeriodControls(); fillSignedPeriodControls(); renderActivities();
 $("#demoHint").classList.toggle("hidden",!DEMO_MODE);
 initFirebase().catch(err=>{console.error(err);toast("Error al inicializar Firebase: "+err.message)});
+
 
 
 
