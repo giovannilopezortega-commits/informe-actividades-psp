@@ -82,41 +82,45 @@ async function generatePdf(save=true){
     doc.setFontSize(7.5);
     doc.text(genericLines,x+4,y+6);
 
-    y+=gh+5;
-    doc.setFont("helvetica","bold");
-    doc.setFontSize(8);
-    doc.text("ACTIVIDADES DESARROLLADAS EN EL PERIODO",x+w/2,y,{align:"center"});
-    y+=2;
-    let actLines=[];
+    y+=gh;
+    const footerY=253,signHeight=20,legalHeight=14,titleHeight=5;
+    const legalText='"Este documento ha sido firmado electrónicamente de conformidad con el artículo 22 del Reglamento para el uso y operación de la Firma Electrónica Avanzada en el Instituto Nacional Electoral".';
+    const drawFooter=()=>{
+      box(x,footerY,w,signHeight);
+      doc.line(x+w/2,footerY,x+w/2,footerY+signHeight);
+      doc.setFont("helvetica","normal");doc.setFontSize(8);
+      doc.text("Elaboró",x+w/4,footerY+3.5,{align:"center"});
+      doc.text("Revisó por parte del INE",x+3*w/4,footerY+3.5,{align:"center"});
+      const writeName=(name,cx)=>{
+        let size=8,lines;
+        do{doc.setFontSize(size);lines=doc.splitTextToSize(String(name||""),w/2-10);size-=0.5;}while(lines.length>3 && size>=6);
+        doc.text(lines,cx,footerY+11,{align:"center",lineHeightFactor:1.15});
+      };
+      writeName(p.name,x+w/4);writeName(s.reviewer,x+3*w/4);
+      box(x,footerY+signHeight,w,legalHeight);
+      doc.setFont("helvetica","italic");doc.setFontSize(7);
+      const legalLines=doc.splitTextToSize(legalText,w-8);
+      doc.text(legalLines,x+w/2,footerY+signHeight+5,{align:"center",lineHeightFactor:1.2});
+    };
+    doc.setFont("helvetica","normal");doc.setFontSize(8);
+    const actLines=[];
     activities.forEach((a,n)=>{
-      const lines=doc.splitTextToSize(`${n+1}. ${a}`,w-12);
-      actLines.push(...lines,"");
+      actLines.push(...doc.splitTextToSize(`${n+1}. ${a}`,w-12),"");
     });
-    const ah=Math.max(67,actLines.length*4+8);
-    box(x,y,w,ah);
-    doc.setFont("helvetica","normal");
-    doc.setFontSize(8);
-    doc.text(actLines,x+6,y+7);
-
-    y+=ah+6;
-    doc.setFont("helvetica","bold");
-    doc.text("Elaboró",x+33,y,{align:"center"});
-    doc.text("Revisó por parte del INE",x+139,y,{align:"center"});
-    y+=25;
-    doc.setFontSize(8);
-    doc.text(String(p.name||""),x+33,y,{align:"center",maxWidth:70});
-    doc.text(String(s.reviewer||""),x+139,y,{align:"center",maxWidth:80});
-    y+=5;
-    doc.setFont("helvetica","normal");
-    doc.text("El Prestador del Servicio",x+33,y,{align:"center"});
-    doc.text(String(s.reviewerRole||""),x+139,y,{align:"center"});
-
-    // Leyenda legal fija al pie de la primera página.
-    const legalText="Firmado electrónicamente en términos de los artículos 10 y 22 del Reglamento para el Uso y Operación de la Firma Electrónica Avanzada en el Instituto Nacional Electoral";
-    doc.setFont("helvetica","normal");
-    doc.setFontSize(6.5);
-    const legalLines=doc.splitTextToSize(legalText,176);
-    doc.text(legalLines,14,286);
+    if(y+titleHeight+12>footerY){doc.addPage();y=30;}
+    while(actLines.length){
+      doc.setFont("helvetica","bold");doc.setFontSize(8);
+      box(x,y,w,titleHeight);
+      doc.text("ACTIVIDADES DESARROLLADAS EN EL PERIODO",x+w/2,y+3.5,{align:"center"});
+      y+=titleHeight;
+      const capacity=Math.max(1,Math.floor((footerY-y-8)/4));
+      const pageLines=actLines.splice(0,capacity);
+      box(x,y,w,footerY-y);
+      doc.setFont("helvetica","normal");doc.setFontSize(8);
+      doc.text(pageLines,x+6,y+6,{lineHeightFactor:4/(8*25.4/72)});
+      drawFooter();
+      if(actLines.length){doc.addPage();y=30;}
+    }
 
     const fileName=`Informe_${slug(p.name)}_${MONTHS[+$("#monthSelect").value]}_${$("#yearSelect").value}.pdf`;
 

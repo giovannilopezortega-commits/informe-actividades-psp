@@ -345,9 +345,9 @@ function previewHTML(){
     <div class="paper-box">${safe(currentPositionConfig().genericActivity || "Pendiente de configurar para este puesto.")}</div>
     <div class="paper-section-title">ACTIVIDADES DESARROLLADAS EN EL PERIODO</div>
     <div class="paper-box paper-activities"><ul>${acts||"<li>Sin actividades capturadas</li>"}</ul></div>
-    <div class="paper-signers"><div>Elaboró<strong>${safe(p.name)}</strong>El Prestador del Servicio</div>
-    <div>Revisó por parte del INE<strong>${safe(s.reviewer)}</strong>${safe(s.reviewerRole)}</div></div>
-    <div class="paper-legal">Firmado electrónicamente en términos de los artículos 10 y 22 del Reglamento para el Uso y Operación de la Firma Electrónica Avanzada en el Instituto Nacional Electoral</div>
+    <div class="paper-signers"><div>Elaboró<strong>${safe(p.name)}</strong></div>
+    <div>Revisó por parte del INE<strong>${safe(s.reviewer)}</strong></div></div>
+    <div class="paper-legal">&quot;Este documento ha sido firmado electrónicamente de conformidad con el artículo 22 del Reglamento para el uso y operación de la Firma Electrónica Avanzada en el Instituto Nacional Electoral&quot;.</div>
   </div>`;
 }
 function formatDate(v){ if(!v)return "—"; const [y,m,d]=v.split("-"); return `${d}/${m}/${y}`; }

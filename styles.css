@@ -255,3 +255,11 @@ input:focus,select:focus,textarea:focus{
   .activity-catalog{grid-template-columns:1fr}
   .activity-catalog .btn{margin-bottom:0;width:100%}
 }
+
+/* Cuadro de firmas y leyenda del formato de informe. */
+.paper-activities{border-bottom:0}
+.paper-signers{margin-top:0;gap:0;border:1px solid #111;min-height:76px;font-size:11px}
+.paper-signers>div{padding:3px 8px 10px}
+.paper-signers>div+div{border-left:1px solid #111}
+.paper-signers strong{margin-top:18px;font-weight:normal}
+.paper-legal{border:1px solid #111;border-top:0;margin:0;padding:10px 8px;text-align:center;font-style:italic;font-size:10px;line-height:1.2}
