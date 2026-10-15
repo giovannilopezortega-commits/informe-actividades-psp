@@ -336,9 +336,9 @@ function previewHTML(){
       <img src="assets/logo-ine-gris.png" alt="Instituto Nacional Electoral" style="width:52mm;height:auto;align-self:flex-start">
       <div class="paper-title">Informe de Actividades<br>Prestadores de Servicios Profesionales<br><span>Fecha de elaboración: ${elaborationDateText()}</span></div>
     </div>
-    <table class="paper-table"><tr><td><b>Nombre del Prestador del Servicio</b><br><br><div class="paper-center">${safe(p.name)}</div></td>
-    <td><b>Unidad Administrativa</b><br><br><div class="paper-center">${safe(s.unit)}</div></td>
-    <td><b>Código</b><br><br><div class="paper-center">${safe(p.code)}</div></td></tr>
+    <table class="paper-table"><tr><td class="paper-center"><b>Nombre del Prestador del Servicio</b><br><br><div class="paper-center">${safe(p.name)}</div></td>
+    <td class="paper-center"><b>Unidad Administrativa</b><br><br><div class="paper-center">${safe(s.unit)}</div></td>
+    <td class="paper-center"><b>Código</b><br><br><div class="paper-center">${safe(p.code)}</div></td></tr>
     <tr><td colspan="3"><b>Contrato No:</b><br><div class="paper-center">${safe(p.contract)}</div></td></tr>
     <tr><td colspan="3" class="paper-center"><b>Vigencia del Contrato</b><br>Del: ${start} &nbsp;&nbsp; Al: ${end}<br><br><b>${safe(periodText())}</b></td></tr></table>
     <div class="paper-section-title">${safe(genericActivityTitle().toLocaleUpperCase("es-MX"))}</div>

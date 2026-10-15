@@ -43,15 +43,15 @@ async function generatePdf(save=true){
 
     box(x,y,w,31);
     doc.setFontSize(7);
-    doc.text("Nombre del Prestador del Servicio",x+2,y+5);
-    doc.text("Unidad Administrativa",x+65,y+5);
-    doc.text("Código",x+130,y+5);
+    doc.text("Nombre del Prestador del Servicio",x+31,y+5,{align:"center"});
+    doc.text("Unidad Administrativa",x+94.5,y+5,{align:"center"});
+    doc.text("Código",x+154.5,y+5,{align:"center"});
 
     doc.setFont("helvetica","normal");
     doc.setFontSize(8);
-    doc.text(String(p.name||""),x+32,y+18,{align:"center",maxWidth:58});
-    doc.text(String(s.unit||""),x+96,y+14,{align:"center",maxWidth:60});
-    doc.text(String(p.code||""),x+155,y+18,{align:"center"});
+    doc.text(String(p.name||""),x+31,y+18,{align:"center",maxWidth:58});
+    doc.text(String(s.unit||""),x+94.5,y+14,{align:"center",maxWidth:60});
+    doc.text(String(p.code||""),x+154.5,y+18,{align:"center"});
     doc.line(x+62,y,x+62,y+31);
     doc.line(x+127,y,x+127,y+31);
 
