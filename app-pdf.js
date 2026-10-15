@@ -58,7 +58,7 @@ async function generatePdf(save=true){
     y+=31;
     box(x,y,w,13);
     doc.setFont("helvetica","bold");
-    doc.text("Contrato No:",x+2,y+5);
+    doc.text("Contrato No:",x+w/2,y+5,{align:"center"});
     doc.setFont("helvetica","normal");
     doc.text(String(p.contract||""),x+w/2,y+10,{align:"center",maxWidth:w-10});
 
