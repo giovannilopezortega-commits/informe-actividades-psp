@@ -1,3 +1,14 @@
+let reportLogoBytesPromise;
+function loadReportLogo(){
+  if(!reportLogoBytesPromise){
+    reportLogoBytesPromise=fetch("assets/logo-ine-gris.png").then(response=>{
+      if(!response.ok) throw new Error("No se pudo cargar el logo del informe. Recarga la página.");
+      return response.arrayBuffer();
+    }).then(bytes=>new Uint8Array(bytes)).catch(error=>{reportLogoBytesPromise=null;throw error;});
+  }
+  return reportLogoBytesPromise;
+}
+
 async function generatePdf(save=true){
   try{
     const activities=state.activities.map(x=>x.trim()).filter(Boolean);
@@ -16,10 +27,9 @@ async function generatePdf(save=true){
     const x=14,w=182;
 
     doc.setFont("helvetica","bold");
-    doc.setFontSize(22);
-    doc.text("INE",14,16);
-    doc.setFontSize(7);
-    doc.text("Instituto Nacional Electoral",14,21);
+    const logoBytes=await loadReportLogo();
+    const logo=doc.getImageProperties(logoBytes);
+    doc.addImage(logoBytes,"PNG",14,7,52,52*logo.height/logo.width);
 
     doc.setFontSize(10);
     doc.text("Informe de Actividades",195,14,{align:"right"});
@@ -63,7 +73,7 @@ async function generatePdf(save=true){
 
     y+=32;
     doc.setFontSize(8);
-    doc.text(genericActivityTitle(),x+w/2,y,{align:"center"});
+    doc.text(genericActivityTitle().toLocaleUpperCase("es-MX"),x+w/2,y,{align:"center"});
     y+=2;
     const genericLines=doc.splitTextToSize(String(currentPositionConfig().genericActivity||"Pendiente de configurar para este puesto."),w-8);
     const gh=Math.max(19,genericLines.length*4+7);
@@ -75,7 +85,7 @@ async function generatePdf(save=true){
     y+=gh+5;
     doc.setFont("helvetica","bold");
     doc.setFontSize(8);
-    doc.text("Actividades Desarrolladas en el Periodo",x+w/2,y,{align:"center"});
+    doc.text("ACTIVIDADES DESARROLLADAS EN EL PERIODO",x+w/2,y,{align:"center"});
     y+=2;
     let actLines=[];
     activities.forEach((a,n)=>{

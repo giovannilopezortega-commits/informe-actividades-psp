@@ -333,7 +333,7 @@ function previewHTML(){
   const start=formatDate(s.contractStart), end=formatDate(s.contractEnd);
   return `<div class="paper">
     <div class="paper-header">
-      <div class="paper-logo-placeholder"><b>INE</b><span>Instituto Nacional Electoral</span></div>
+      <img src="assets/logo-ine-gris.png" alt="Instituto Nacional Electoral" style="width:52mm;height:auto;align-self:flex-start">
       <div class="paper-title">Informe de Actividades<br>Prestadores de Servicios Profesionales<br><span>Fecha de elaboración: ${elaborationDateText()}</span></div>
     </div>
     <table class="paper-table"><tr><td><b>Nombre del Prestador del Servicio</b><br><br><div class="paper-center">${safe(p.name)}</div></td>
@@ -341,9 +341,9 @@ function previewHTML(){
     <td><b>Código</b><br><br><div class="paper-center">${safe(p.code)}</div></td></tr>
     <tr><td colspan="3"><b>Contrato No:</b><br><div class="paper-center">${safe(p.contract)}</div></td></tr>
     <tr><td colspan="3" class="paper-center"><b>Vigencia del Contrato</b><br>Del: ${start} &nbsp;&nbsp; Al: ${end}<br><br><b>${safe(periodText())}</b></td></tr></table>
-    <div class="paper-section-title">${safe(genericActivityTitle())}</div>
+    <div class="paper-section-title">${safe(genericActivityTitle().toLocaleUpperCase("es-MX"))}</div>
     <div class="paper-box">${safe(currentPositionConfig().genericActivity || "Pendiente de configurar para este puesto.")}</div>
-    <div class="paper-section-title">Actividades Desarrolladas en el Periodo</div>
+    <div class="paper-section-title">ACTIVIDADES DESARROLLADAS EN EL PERIODO</div>
     <div class="paper-box paper-activities"><ul>${acts||"<li>Sin actividades capturadas</li>"}</ul></div>
     <div class="paper-signers"><div>Elaboró<strong>${safe(p.name)}</strong>El Prestador del Servicio</div>
     <div>Revisó por parte del INE<strong>${safe(s.reviewer)}</strong>${safe(s.reviewerRole)}</div></div>
