@@ -222,14 +222,16 @@ function renderAdmin(){
   const s=state.settings;$("#sUnit").value=s.unit||"";$("#sStart").value=s.contractStart||"";$("#sEnd").value=s.contractEnd||"";$("#sGeneric").value=s.genericActivity||"";$("#sReviewer").value=s.reviewer||"";$("#sReviewerRole").value=s.reviewerRole||"";
   renderUsersTable();
   loadPositionCatalogForm();
+  renderTestAccountCleanup();
 }
 async function loadUsers(){
   if(state.profile?.role!=="admin") return;
   if(DEMO_MODE)return;
-  const snap=await firebase.getDocs(firebase.collection(firebase.db,"users"));state.users=snap.docs.map(d=>({uid:d.id,...d.data()}));renderUsersTable();
+  const snap=await firebase.getDocs(firebase.collection(firebase.db,"users"));state.users=snap.docs.map(d=>({...d.data(),uid:d.id}));renderUsersTable();
 }
 function renderUsersTable(){
-  $("#usersTable tbody").innerHTML=state.users.map(u=>`<tr><td>${safe(u.name)}</td><td>${safe(u.username)}</td><td>${safe(u.code)}</td><td>${safe(u.position||"Validador")}</td><td>${safe(u.contract)}</td><td>${safe(u.role)}</td><td>${u.active===false?"Inactivo":"Activo"}</td></tr>`).join("");
+  renderTestAccountCleanup();
+  $("#usersTable tbody").innerHTML=state.users.filter(u=>u.retired!==true).map(u=>`<tr><td>${safe(u.name)}</td><td>${safe(u.username)}</td><td>${safe(u.code)}</td><td>${safe(u.position||"Validador")}</td><td>${safe(u.contract)}</td><td>${safe(u.role)}</td><td>${u.active===false?"Inactivo":"Activo"}</td></tr>`).join("");
 }
 async function createUser(e){
   e.preventDefault();
@@ -407,3 +409,57 @@ initFirebase().catch(err=>{console.error(err);toast("Error al inicializar Fireba
 
 
 
+
+const TEST_ACCOUNT_USERNAMES = new Set(["esthela.torres","jesus.vallarin","rocio.enriquez","admin","lourdes.jimenez"]);
+const KEEP_ADMIN_UID = "xaSvbf2IOrTDZ7FSAL4hLkmrKDF3";
+function isKnownTestAccount(u){
+  return !!u && u.uid!==KEEP_ADMIN_UID && u.uid!==state.user?.uid &&
+    TEST_ACCOUNT_USERNAMES.has(String(u.username||"").trim().toLowerCase());
+}
+function renderTestAccountCleanup(){
+  const button=$("#retireTestAccountsBtn");
+  if(!button) return;
+  const candidates=state.users.filter(u=>isKnownTestAccount(u)&&u.retired!==true);
+  button.disabled=DEMO_MODE || state.user?.uid!==KEEP_ADMIN_UID || !candidates.length;
+  button.textContent="Retirar cuentas de prueba"+(candidates.length?" ("+candidates.length+")":"");
+}
+async function retireTestAccounts(){
+  if(DEMO_MODE || state.profile?.role!=="admin" || state.user?.uid!==KEEP_ADMIN_UID){
+    toast("Ingresa con la cuenta giovanni para retirar las cuentas de prueba.");return;
+  }
+  const button=$("#retireTestAccountsBtn"), status=$("#testAccountCleanupStatus");
+  button.disabled=true;
+  try{
+    await loadUsers();
+    const candidates=state.users.filter(u=>isKnownTestAccount(u)&&u.retired!==true);
+    if(!candidates.length){status.textContent="No quedan cuentas de prueba por retirar.";return;}
+    if(!window.confirm("Se retirarán estas cuentas de prueba:\n"+
+      candidates.map(u=>u.name+" ("+u.username+")").join("\n")+
+      "\n\nConservarás giovanni. Las cuentas quedarán inactivas y ocultas en esta lista. Sus datos e informes se conservarán para poder recuperarlos. ¿Continuar?")) return;
+    button.disabled=true;
+    await firebase.runTransaction(firebase.db,async transaction=>{
+      const keeper=await transaction.get(firebase.doc(firebase.db,"users",KEEP_ADMIN_UID));
+      if(!keeper.exists() || keeper.data().active!==true || keeper.data().role!=="admin" ||
+        keeper.data().username!=="giovanni") throw new Error("No se pudo verificar la cuenta giovanni.");
+      const snapshots=[];
+      for(const u of candidates) snapshots.push(await transaction.get(firebase.doc(firebase.db,"users",u.uid)));
+      for(let i=0;i<snapshots.length;i++){
+        const snapshot=snapshots[i];
+        if(!snapshot.exists()) throw new Error("Cambió la lista de usuarios. Actualiza e intenta de nuevo.");
+        const current={...snapshot.data(),uid:snapshot.id};
+        if(!isKnownTestAccount(current) || current.username!==candidates[i].username)
+          throw new Error("Cambió una cuenta. Actualiza e intenta de nuevo.");
+      }
+      for(let i=0;i<snapshots.length;i++) transaction.update(snapshots[i].ref,{
+        active:false,retired:true,retiredAt:firebase.serverTimestamp(),
+        retiredBy:state.user.uid,retiredReason:"Cuenta de prueba",
+        activeBeforeRetirement:snapshots[i].data().active===true
+      });
+    });
+    await loadUsers();
+    status.textContent="Se retiraron "+candidates.length+" cuentas de prueba. La cuenta giovanni sigue activa. Los datos se conservaron.";
+    toast("Cuentas de prueba retiradas.");
+  }catch(err){status.textContent=authErrorMessage(err);toast(authErrorMessage(err));}
+  finally{renderTestAccountCleanup();}
+}
+$("#retireTestAccountsBtn")?.addEventListener("click",retireTestAccounts);
