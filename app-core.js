@@ -247,7 +247,7 @@ function renderProfile(){
   const p=state.profile, s=state.settings;
   $("#welcomeTitle").textContent=`Hola, ${p.name}`;
   $("#userCodeBadge").textContent=`Código ${p.code}`;
-  $("#fName").textContent=p.name; $("#fCode").textContent=p.code; $("#fContract").textContent=p.contract; $("#fUnit").textContent=s.unit;
+  $("#fName").textContent=p.name; $("#fCode").textContent=p.code; $("#fContract").textContent=p.contract||"Pendiente"; $("#fUnit").textContent=s.unit;
   if($("#fPosition")) $("#fPosition").textContent=positionLabel();
   $("#genericActivity").textContent=currentPositionConfig().genericActivity || "Pendiente de configurar para este puesto."; $("#elaboroName").textContent=p.name;
   renderActivityCatalog();
@@ -279,6 +279,9 @@ function periodText(){
   return `Entregable correspondiente del 01 al ${String(lastDay).padStart(2,"0")} de ${month} de ${year}`;
 }
 
+function contractPeriod(){
+  return {contractStart:state.profile?.contractStart || state.settings.contractStart,contractEnd:state.profile?.contractEnd || state.settings.contractEnd};
+}
 function elaborationDateText(){
   const d=new Date();
   return d.toLocaleDateString("es-MX",{day:"2-digit",month:"2-digit",year:"numeric"});
@@ -330,7 +333,8 @@ function showTab(id){
 function previewHTML(){
   const p=state.profile,s=state.settings;
   const acts=state.activities.filter(x=>x.trim()).map(x=>`<li>${safe(x)}</li>`).join("");
-  const start=formatDate(s.contractStart), end=formatDate(s.contractEnd);
+  const dates=contractPeriod();
+  const start=formatDate(dates.contractStart), end=formatDate(dates.contractEnd);
   return `<div class="paper">
     <div class="paper-header">
       <img src="assets/logo-ine-gris.png" alt="Instituto Nacional Electoral" style="width:52mm;height:auto;align-self:flex-start">
@@ -339,7 +343,7 @@ function previewHTML(){
     <table class="paper-table"><tr><td class="paper-center"><b>Nombre del Prestador del Servicio</b><br><br><div class="paper-center">${safe(p.name)}</div></td>
     <td class="paper-center"><b>Unidad Administrativa</b><br><br><div class="paper-center">${safe(s.unit)}</div></td>
     <td class="paper-center"><b>Código</b><br><br><div class="paper-center">${safe(p.code)}</div></td></tr>
-    <tr><td colspan="3" class="paper-center"><b>Contrato No:</b><br><div class="paper-center">${safe(p.contract)}</div></td></tr>
+    <tr><td colspan="3" class="paper-center"><b>Contrato No:</b><br><div class="paper-center">${safe(p.contract||"Pendiente")}</div></td></tr>
     <tr><td colspan="3" class="paper-center"><b>Vigencia del Contrato</b><br>Del: ${start} &nbsp;&nbsp; Al: ${end}<br><br><b>${safe(periodText())}</b></td></tr></table>
     <div class="paper-section-title">${safe(genericActivityTitle().toLocaleUpperCase("es-MX"))}</div>
     <div class="paper-box">${safe(currentPositionConfig().genericActivity || "Pendiente de configurar para este puesto.")}</div>

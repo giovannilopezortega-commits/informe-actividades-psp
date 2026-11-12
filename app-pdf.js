@@ -60,14 +60,14 @@ async function generatePdf(save=true){
     doc.setFont("helvetica","bold");
     doc.text("Contrato No:",x+w/2,y+5,{align:"center"});
     doc.setFont("helvetica","normal");
-    doc.text(String(p.contract||""),x+w/2,y+10,{align:"center",maxWidth:w-10});
+    doc.text(String(p.contract||"Pendiente"),x+w/2,y+10,{align:"center",maxWidth:w-10});
 
     y+=13;
     box(x,y,w,29);
     doc.setFont("helvetica","bold");
     doc.text("Vigencia del Contrato",x+w/2,y+6,{align:"center"});
     doc.setFont("helvetica","normal");
-    doc.text(`Del: ${formatDate(s.contractStart)}   Al: ${formatDate(s.contractEnd)}`,x+w/2,y+12,{align:"center"});
+    doc.text(`Del: ${formatDate(contractPeriod().contractStart)}   Al: ${formatDate(contractPeriod().contractEnd)}`,x+w/2,y+12,{align:"center"});
     doc.setFont("helvetica","bold");
     doc.text(periodText(),x+w/2,y+22,{align:"center",maxWidth:w-8});
 

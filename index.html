@@ -258,6 +258,7 @@
             <div class="bulk-help">
               <strong>Columnas requeridas</strong>
               <span>nombre, usuario, contraseña, codigo, contrato, puesto, rol</span>
+              <span>El contrato puede quedar vacío. Vigencia opcional: inicio_vigencia y fin_vigencia, en formato AAAA-MM-DD.</span>
             </div>
           </div>
           <div id="bulkUsersPreview" class="bulk-preview hidden"></div>
@@ -287,7 +288,9 @@
               <label>Rol
                 <select id="aRole"><option value="user">Prestador</option><option value="admin">Administrador</option></select>
               </label>
-              <label class="wide">Contrato No.<input id="aContract" required></label>
+              <label class="wide">Contrato No. (opcional)<input id="aContract" placeholder="Pendiente"></label>
+              <label>Inicio de vigencia<input id="aStart" type="date"></label>
+              <label>Fin de vigencia<input id="aEnd" type="date"></label>
               <button class="btn primary wide" type="submit">Crear usuario</button>
             </form>
           </article>
@@ -367,9 +370,9 @@
 
   <script src="firebase-config.js?v=3.11.0"></script>
   <script src="activity-catalogs.js?v=3.10.0"></script>
-  <script src="app-core.js?v=3.12.3"></script>
-  <script src="app-pdf.js?v=3.12.3"></script>
-  <script src="app-data.js?v=3.14.0"></script>
+  <script src="app-core.js?v=3.15.0"></script>
+  <script src="app-pdf.js?v=3.15.0"></script>
+  <script src="app-data.js?v=3.15.0"></script>
 </body>
 </html>
 

@@ -237,15 +237,17 @@ function renderUsersTable(){
     const protectedAccount=u.uid===state.user?.uid || u.uid===KEEP_ADMIN_UID;
     const disabled=DEMO_MODE || protectedAccount || userAccountActionPending;
     const button=(action,label)=>`<button type="button" class="btn secondary" data-user-action="${action}" data-user-uid="${safe(u.uid)}"${disabled?" disabled":""}>${label}</button>`;
-    const actions=protectedAccount?'<span class="muted small">Cuenta protegida</span>':
+    const contractButton=u.retired===true?"":`<button type="button" class="btn secondary" data-user-action="contract" data-user-uid="${safe(u.uid)}"${DEMO_MODE||userAccountActionPending?" disabled":""}>Editar contrato</button> `;
+    const actions=contractButton+(protectedAccount?'<span class="muted small">Cuenta protegida</span>':
       u.retired===true?button("restore","Restaurar"):
-      button(u.active===true?"deactivate":"activate",u.active===true?"Desactivar":"Reactivar")+" "+button("delete","Eliminar");
-    return `<tr><td>${safe(u.name)}</td><td>${safe(u.username)}</td><td>${safe(u.code)}</td><td>${safe(u.position||"Validador")}</td><td>${safe(u.contract)}</td><td>${safe(u.role)}</td><td>${u.retired===true?"Eliminada":u.active===true?"Activo":"Inactivo"}</td><td>${actions}</td></tr>`;
+      button(u.active===true?"deactivate":"activate",u.active===true?"Desactivar":"Reactivar")+" "+button("delete","Eliminar"));
+    return `<tr><td>${safe(u.name)}</td><td>${safe(u.username)}</td><td>${safe(u.code)}</td><td>${safe(u.position||"Validador")}</td><td>${safe(u.contract||"Pendiente")}</td><td>${safe(u.role)}</td><td>${u.retired===true?"Eliminada":u.active===true?"Activo":"Inactivo"}</td><td>${actions}</td></tr>`;
   }).join("");
 }
 async function createUser(e){
   e.preventDefault();
   const userData={name:$("#aName").value.trim(),username:$("#aUsername").value.trim().toLowerCase(),code:$("#aCode").value.trim(),contract:$("#aContract").value.trim(),position:$("#aPosition").value,role:$("#aRole").value,active:true};
+  try{Object.assign(userData,parseContractDates($("#aStart").value,$("#aEnd").value));}catch(err){toast(err.message);return;}
   const pwd=$("#aPassword").value;
   if(DEMO_MODE){
     try{await createDemoUser(userData,pwd);renderUsersTable();e.target.reset();toast("Usuario de prueba guardado en este navegador.");}
@@ -256,6 +258,36 @@ async function createUser(e){
   catch(err){toast(authErrorMessage(err));}
 }
 let pendingBulkUsers=[];
+
+
+function parseContractDates(start,end){
+  start=String(start||"").trim();end=String(end||"").trim();
+  if(!start&&!end)return {};
+  const valid=value=>/^\d{4}-\d{2}-\d{2}$/.test(value)&&
+    !isNaN(Date.parse(value))&&new Date(value).toISOString().slice(0,10)===value;
+  if(!valid(start)||!valid(end)||end<start)
+    throw new Error("Captura una vigencia válida: inicio y fin en formato AAAA-MM-DD, con fin igual o posterior al inicio.");
+  return {contractStart:start,contractEnd:end};
+}
+async function editUserContract(uid){
+  if(userAccountActionPending || DEMO_MODE || state.profile?.role!=="admin")return;
+  const status=$("#userAccountStatus"),user=state.users.find(u=>u.uid===uid);
+  if(!user||user.retired===true)return;
+  const value=window.prompt("Número de contrato de "+user.name+"\nPuedes dejarlo vacío si aún está pendiente.",user.contract||"");
+  if(value===null)return;
+  userAccountActionPending=true;renderUsersTable();
+  try{
+    await firebase.runTransaction(firebase.db,async transaction=>{
+      const ref=firebase.doc(firebase.db,"users",uid),snapshot=await transaction.get(ref);
+      if(!snapshot.exists() || snapshot.data().retired===true)throw new Error("La cuenta ya no está disponible.");
+      if(snapshot.data().contract!==user.contract)throw new Error("El contrato cambió. Actualiza la lista e intenta de nuevo.");
+      transaction.update(ref,{contract:value.trim(),updatedAt:firebase.serverTimestamp(),updatedBy:state.user.uid});
+    });
+    if(state.profile.uid===uid){state.profile.contract=value.trim();renderProfile();}
+    status.textContent="Contrato actualizado.";toast("Contrato actualizado.");
+  }catch(err){status.textContent=authErrorMessage(err);toast(authErrorMessage(err));}
+  finally{userAccountActionPending=false;await loadUsers();renderUsersTable();}
+}
 
 function splitCsvLine(line, delimiter){
   const out=[]; let cur=""; let quoted=false;
@@ -287,11 +319,12 @@ function parseUsersCsv(text){
       password:(obj.contrasena||"").trim(),
       code:(obj.codigo||"").trim(),
       contract:(obj.contrato||"").trim(),
+      ...parseContractDates(obj.inicio_vigencia,obj.fin_vigencia),
       position:normalizePosition(obj.puesto),
       role:(obj.rol||"user").trim().toLowerCase()==="admin"?"admin":"user",
       active:true,row:i+1
     };
-    if(!u.name||!u.username||!u.password||!u.code||!u.contract||!u.position) throw new Error("Fila "+u.row+": hay datos obligatorios vacíos.");
+    if(!u.name||!u.username||!u.password||!u.code||!u.position) throw new Error("Fila "+u.row+": hay datos obligatorios vacíos.");
     if(u.password.length<6) throw new Error("Fila "+u.row+": la contraseña debe tener al menos 6 caracteres.");
     if(!POSITION_TYPES.includes(u.position)) throw new Error("Fila "+u.row+": puesto no válido. Usa SE, CAE, Técnico, Validador o Técnico de Voz y Datos.");
     if(seen.has(u.username)) throw new Error("Usuario duplicado en el CSV: "+u.username);
@@ -331,7 +364,7 @@ async function importBulkUsers(){
         const {password,row,...profile}=u;
         await createDemoUser(profile,password);
       }else{
-        await createFirebaseUser({name:u.name,username:u.username,code:u.code,contract:u.contract,position:u.position,role:u.role,active:true},u.password);
+        await createFirebaseUser({name:u.name,username:u.username,code:u.code,contract:u.contract,position:u.position,role:u.role,active:true,...parseContractDates(u.contractStart,u.contractEnd)},u.password);
       }
       ok++;
     }catch(err){failed++;errors.push(u.username+": "+(err?.message||"error"));try{if(!DEMO_MODE)await firebase.signOut(firebase.secondaryAuth);}catch{}}
@@ -530,5 +563,8 @@ async function manageUserAccount(uid,action){
 $("#showRetiredUsers")?.addEventListener("change",renderUsersTable);
 $("#usersTable")?.addEventListener("click",event=>{
   const button=event.target.closest("button[data-user-action]");
-  if(button && !button.disabled)manageUserAccount(button.dataset.userUid,button.dataset.userAction);
+  if(button && !button.disabled){
+    if(button.dataset.userAction==="contract")editUserContract(button.dataset.userUid);
+    else manageUserAccount(button.dataset.userUid,button.dataset.userAction);
+  }
 });
