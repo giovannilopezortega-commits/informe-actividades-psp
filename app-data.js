@@ -231,7 +231,17 @@ async function loadUsers(){
 }
 function renderUsersTable(){
   renderTestAccountCleanup();
-  $("#usersTable tbody").innerHTML=state.users.filter(u=>u.retired!==true).map(u=>`<tr><td>${safe(u.name)}</td><td>${safe(u.username)}</td><td>${safe(u.code)}</td><td>${safe(u.position||"Validador")}</td><td>${safe(u.contract)}</td><td>${safe(u.role)}</td><td>${u.active===false?"Inactivo":"Activo"}</td></tr>`).join("");
+  const showRetired=$("#showRetiredUsers")?.checked===true;
+  const users=state.users.filter(u=>showRetired || u.retired!==true);
+  $("#usersTable tbody").innerHTML=users.map(u=>{
+    const protectedAccount=u.uid===state.user?.uid || u.uid===KEEP_ADMIN_UID;
+    const disabled=DEMO_MODE || protectedAccount || userAccountActionPending;
+    const button=(action,label)=>`<button type="button" class="btn secondary" data-user-action="${action}" data-user-uid="${safe(u.uid)}"${disabled?" disabled":""}>${label}</button>`;
+    const actions=protectedAccount?'<span class="muted small">Cuenta protegida</span>':
+      u.retired===true?button("restore","Restaurar"):
+      button(u.active===true?"deactivate":"activate",u.active===true?"Desactivar":"Reactivar")+" "+button("delete","Eliminar");
+    return `<tr><td>${safe(u.name)}</td><td>${safe(u.username)}</td><td>${safe(u.code)}</td><td>${safe(u.position||"Validador")}</td><td>${safe(u.contract)}</td><td>${safe(u.role)}</td><td>${u.retired===true?"Eliminada":u.active===true?"Activo":"Inactivo"}</td><td>${actions}</td></tr>`;
+  }).join("");
 }
 async function createUser(e){
   e.preventDefault();
@@ -463,3 +473,62 @@ async function retireTestAccounts(){
   finally{renderTestAccountCleanup();}
 }
 $("#retireTestAccountsBtn")?.addEventListener("click",retireTestAccounts);
+
+let userAccountActionPending=false;
+function userAccountChange(user,action){
+  if(user.uid===state.user?.uid || user.uid===KEEP_ADMIN_UID)
+    throw new Error("No puedes eliminar ni desactivar esta cuenta de administrador.");
+  if(!["activate","deactivate","delete","restore"].includes(action))
+    throw new Error("La acción no es válida.");
+  if(user.retired===true && action!=="restore")
+    throw new Error("Primero restaura la cuenta eliminada.");
+  if(user.retired!==true && action==="restore")
+    throw new Error("La cuenta ya está en la lista.");
+  const audit={updatedAt:firebase.serverTimestamp(),updatedBy:state.user.uid};
+  if(action==="delete")return {...audit,active:false,retired:true,
+    retiredAt:firebase.serverTimestamp(),retiredBy:state.user.uid,
+    retiredReason:"Eliminada desde Administración",activeBeforeRetirement:user.active===true};
+  if(action==="restore")return {...audit,retired:false,active:false};
+  return {...audit,active:action==="activate"};
+}
+async function manageUserAccount(uid,action){
+  if(userAccountActionPending)return;
+  const status=$("#userAccountStatus");
+  try{
+    if(DEMO_MODE)throw new Error("La administración de cuentas requiere el modo conectado.");
+    if(state.profile?.role!=="admin" || !state.user?.uid)
+      throw new Error("Solo el administrador puede administrar cuentas.");
+    const user=state.users.find(u=>u.uid===uid);
+    if(!user)throw new Error("No se encontró la cuenta. Actualiza la lista.");
+    userAccountChange(user,action);
+    const prompts={
+      deactivate:"Desactivar esta cuenta impedirá su acceso. Sus datos e informes se conservarán.",
+      activate:"La cuenta podrá volver a ingresar con su usuario y contraseña.",
+      delete:"La cuenta quedará inactiva y se retirará de la lista. Sus datos e informes se conservarán. Podrás recuperarla con Mostrar cuentas eliminadas.",
+      restore:"La cuenta volverá a la lista como inactiva. Después podrás reactivarla."
+    };
+    if(!window.confirm(user.name+" ("+user.username+")\n\n"+prompts[action]+"\n\n¿Continuar?"))return;
+    userAccountActionPending=true;renderUsersTable();
+    await firebase.runTransaction(firebase.db,async transaction=>{
+      const ref=firebase.doc(firebase.db,"users",uid);
+      const snapshot=await transaction.get(ref);
+      if(!snapshot.exists())throw new Error("La cuenta ya no existe. Actualiza la lista.");
+      const current={...snapshot.data(),uid:snapshot.id};
+      if(current.username!==user.username || current.active!==user.active || current.retired!==user.retired)
+        throw new Error("La cuenta cambió mientras la revisabas. Actualiza la lista e intenta de nuevo.");
+      transaction.update(ref,userAccountChange(current,action));
+    });
+    const messages={deactivate:"Cuenta desactivada.",activate:"Cuenta reactivada.",delete:"Cuenta eliminada de la lista. Puedes restaurarla en Mostrar cuentas eliminadas.",restore:"Cuenta restaurada como inactiva. Pulsa Reactivar para permitir el acceso."};
+    status.textContent=messages[action];toast(messages[action]);
+  }catch(err){status.textContent=authErrorMessage(err);toast(authErrorMessage(err));}
+  finally{
+    userAccountActionPending=false;
+    try{await loadUsers();}catch(err){status.textContent+=" No se pudo actualizar la lista: "+authErrorMessage(err);}
+    renderUsersTable();
+  }
+}
+$("#showRetiredUsers")?.addEventListener("change",renderUsersTable);
+$("#usersTable")?.addEventListener("click",event=>{
+  const button=event.target.closest("button[data-user-action]");
+  if(button && !button.disabled)manageUserAccount(button.dataset.userUid,button.dataset.userAction);
+});

@@ -339,9 +339,12 @@
           <p class="muted small">Retira las cuentas de prueba anteriores al alta del personal contratado. Quedarán inactivas y sus datos se conservarán.</p>
           <button id="retireTestAccountsBtn" class="btn secondary" type="button" disabled>Retirar cuentas de prueba</button>
           <p id="testAccountCleanupStatus" class="muted small" role="status" aria-live="polite"></p>
+          <p class="muted small">Desactivar bloquea el acceso. Eliminar retira la cuenta de la lista y conserva sus datos e informes para poder recuperarlos.</p>
+          <label><input id="showRetiredUsers" type="checkbox"> Mostrar cuentas eliminadas</label>
+          <p id="userAccountStatus" class="muted small" role="status" aria-live="polite"></p>
           <div class="table-wrap">
             <table class="data-table" id="usersTable">
-              <thead><tr><th>Nombre</th><th>Usuario</th><th>Código</th><th>Puesto</th><th>Contrato</th><th>Rol</th><th>Estado</th></tr></thead>
+              <thead><tr><th>Nombre</th><th>Usuario</th><th>Código</th><th>Puesto</th><th>Contrato</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -366,7 +369,7 @@
   <script src="activity-catalogs.js?v=3.10.0"></script>
   <script src="app-core.js?v=3.12.3"></script>
   <script src="app-pdf.js?v=3.12.3"></script>
-  <script src="app-data.js?v=3.13.0"></script>
+  <script src="app-data.js?v=3.14.0"></script>
 </body>
 </html>
 
