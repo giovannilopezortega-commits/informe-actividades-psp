@@ -210,8 +210,12 @@ function positionLabel(pos=currentPosition()){
   })[pos] || pos;
 }
 function correctCatalogActivity(activity, pos){
-  if(pos!=="Técnico") return activity;
-  return String(activity)
+  const wording=activity
+    .replace(/\bapoyé(?![\wáéíóúüñ])/gi, word=>word==="apoyé" ? "colaboré" : word==="APOYÉ" ? "COLABORÉ" : "Colaboré")
+    .replace(/(colaboré) a la Junta Distrital Ejecutiva y al Consejo Distrital/gi,"$1 con la Junta Distrital Ejecutiva y el Consejo Distrital")
+    .replace(/(colaboré) a la (Junta Distrital Ejecutiva|Vocal de Capacitación Electoral y Educación Cívica Distrital)/gi,"$1 con la $2");
+  if(pos!=="Técnico") return wording;
+  return wording
     .replace(/\s+o,\s*en su caso,\s*ampliar la lista de reserva/gi," y para ampliar la lista de reserva")
     .replace(/\bEn su caso,\s*/gi,"")
     .replace(/,\s*en su caso,\s*/gi,", ")
