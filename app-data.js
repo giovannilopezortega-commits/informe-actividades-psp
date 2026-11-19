@@ -387,7 +387,7 @@ async function savePositionCatalog(){
   if(!state.settings.positions) state.settings.positions={};
   state.settings.positions[pos]={
     ...(DEMO_SETTINGS.positions[pos]?.catalogVersion ? {catalogVersion:DEMO_SETTINGS.positions[pos].catalogVersion} : {}),
-    genericActivity:$("#catalogGenericActivity").value.trim(),
+    genericActivity:DEMO_SETTINGS.positions[pos]?.genericActivity || "",
     developedActivities:$("#catalogDevelopedActivities").value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean)
   };
   if(!DEMO_MODE){
