@@ -232,7 +232,7 @@ function positionConfig(pos){
     ? configured.developedActivities.filter(a=>typeof a==="string" && a.trim())
     : [];
   return {
-    genericActivity:configured.genericActivity || defaults.genericActivity || state.settings?.genericActivity || "",
+    genericActivity:defaults.genericActivity || configured.genericActivity || state.settings?.genericActivity || "",
     developedActivities:(activities.length ? activities : (defaults.developedActivities || [])).map(a=>correctCatalogActivity(a,pos))
   };
 }
