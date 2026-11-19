@@ -1,7 +1,7 @@
 window.ACTIVITY_CATALOGS = {
   SE: {
     label: "Supervisor Electoral",
-    genericActivity: "Coordiné, apoyé y verifiqué, en gabinete y campo, las actividades de integración de mesas directivas de casilla, capacitación y asistencia electoral realizadas por las personas Capacitadoras-Asistentes Electorales bajo mi responsabilidad, con la finalidad de darles cumplimiento en tiempo y forma.",
+    genericActivity: "Efectuar la verificación y supervisión (en gabinete y campo) de las actividades de capacitación y asistencia electoral realizadas por las y los Capacitadores/as-Asistentes Electorales, con la finalidad de realizar las acciones para la ubicación de casillas y las correspondientes medidas encaminadas para asegurar la accesibilidad en los domicilios, integración y funcionamiento de las Mesas Directivas de Casilla, operación del Sistema de Información sobre el desarrollo de la Jornada Electoral (SIJE), mecanismos de recolección, traslado del paquete electoral y cómputo distrital, en los procesos electorales y demás ejercicios democráticos (consulta popular, revocación de mandato, elección del poder judicial).",
     developedActivities: [
       "Asistí y participé en los talleres de capacitación, en modalidad presencial o a distancia y, en su caso, realicé el curso virtual para el óptimo desarrollo de sus actividades.",
       "Coordiné a las personas Capacitadoras-Asistentes Electorales de su Zona de Responsabilidad Electoral, recorrí e identifiqué con ellas las Áreas de Responsabilidad Electoral y apoyé a la Junta Distrital Ejecutiva en su capacitación.",
@@ -25,7 +25,7 @@ window.ACTIVITY_CATALOGS = {
   },
   CAE: {
     label: "Capacitador-Asistente Electoral",
-    genericActivity: "Visité, notifiqué y capacité a la ciudadanía sorteada; entregué los nombramientos y proporcioné a la ciudadanía designada como funcionaria de mesa directiva de casilla los conocimientos y habilidades necesarias para realizar sus actividades durante la Jornada Electoral, y desarrollé las tareas de asistencia electoral.",
+    genericActivity: "Realizar visitas a las y los ciudadanos sorteados, con la finalidad de sensibilizar, notificar, capacitar, entregar nombramientos y proporcionar los conocimientos y habilidades necesarias a los/as designados/as como Funcionarios/as de Mesas Directivas de Casilla para realizar sus actividades en la jornada electoral y demás ejercicios democráticos (consulta popular, revocación de mandato, elección del poder judicial), mediante el desarrollo de actividades de asistencia electoral, integración, instalación y funcionamiento de casillas, informes a SIJE y aquellas relacionadas con el operativo en campo del Conteo Rápido, PREP-casilla y de operación y funcionamiento de los mecanismos de recolección, traslado de los paquetes electorales y lo relativo al cómputo distrital.",
     developedActivities: [
       "Asistí y participé en la totalidad de los talleres de capacitación, en modalidad presencial o a distancia, así como realicé el curso virtual para el óptimo desempeño de sus actividades.",
       "Recorrí e identifiqué su Área de Responsabilidad Electoral con la persona Supervisora Electoral e identifiqué los lugares para la ubicación de casillas.",
@@ -56,7 +56,7 @@ Object.assign(window.ACTIVITY_CATALOGS, {
   "Técnico": {
     "label": "Técnico en Capacitación Electoral",
     "catalogVersion": 1,
-    "genericActivity": "Concentré, sistematicé y revisé la información registrada en el Multisistema ELEC2027, elaboré reportes de avances e informes durante la primera y segunda etapa de capacitación y colaboré en la verificación, tanto en gabinete como en campo, durante el proceso de Integración de Mesas Directivas de Casilla, capacitación y asistencia electoral, a efecto de constatar el cumplimiento de las actividades realizadas por las y los Supervisores Electorales y Capacitadores-Asistentes Electorales.",
+    "genericActivity": "Concentrar, sistematizar y revisar la información registrada en el Multisistema ELEC, así como elaborar reportes y efectuar verificaciones tanto en gabinete como en campo durante el proceso de integración de mesas directivas de casilla y capacitación electoral, a efecto de dar cumplimiento a las actividades que realizan las y los Supervisores/as Electorales y Capacitadores/as Asistentes Electorales, en los procesos electorales y demás ejercicios democráticos (consulta popular, revocación de mandato, elección del poder judicial).",
     "developedActivities": [
       "Difundí la convocatoria para participar como Supervisor Electoral o Capacitador-Asistente Electoral mediante carteles, volantes, perifoneo, redes sociales y medios electrónicos.",
       "Auxilié con el registro de personas aspirantes en el sistema correspondiente.",
@@ -102,7 +102,7 @@ Object.assign(window.ACTIVITY_CATALOGS, {
   "Validador": {
     "label": "Validador de Captura",
     "catalogVersion": 1,
-    "genericActivity": "Registré, procesé y validé la información generada en los diversos sistemas informáticos que integran el Multisistema ELEC2027 y ELEC móvil, en los temas relacionados con el proceso de reclutamiento, selección y contratación de las y los Supervisores Electorales y Capacitadores-Asistentes Electorales, así como las actividades realizadas por estas figuras una vez contratadas, en materia de Integración de Mesas Directivas de Casilla.",
+    "genericActivity": "Efectuar el registro, procesamiento y validación de la información generada en los sistemas del Multisistema ELEC y ELEC Móvil, mediante la captura, revisión y análisis de datos operativos, para dar seguimiento a la captación, desempeño y actividades de campo del personal electoral, y contribuir a la integración de mesas directivas de casilla y a la ejecución de la capacitación electoral.",
     "developedActivities": [
       "Conocí los manuales, instructivos y materiales de apoyo habilitados sobre la operación del Multisistema ELEC2027.",
       "Realicé, de forma conjunta con la o el Vocal de Capacitación Electoral y Educación Cívica, los ejercicios y pruebas para cada uno de los sistemas que integraban el Multisistema ELEC2027.",
@@ -130,7 +130,7 @@ Object.assign(window.ACTIVITY_CATALOGS, {
   "Técnico de Voz y Datos": {
     "label": "Técnico de Voz y Datos",
     "catalogVersion": 1,
-    "genericActivity": "Colaboré con la o el Vocal de Capacitación Electoral y Educación Cívica de la Junta Distrital Ejecutiva en las actividades inherentes a la operación de la herramienta tecnológica ELEC móvil, basada en el uso de voz y datos móviles y demás aplicaciones institucionales, así como en la administración, configuración y uso de los dispositivos móviles empleados para tal fin, como apoyo para la Integración de Mesas Directivas de Casilla, Capacitación y Asistencia Electoral.",
+    "genericActivity": "Realizar en conjunto con el o la vocal de capacitación electoral y educación cívica, las actividades inherentes a la operación de la herramienta tecnológica ELEC móvil, mediante el uso de voz, datos móviles y demás aplicaciones, con el objetivo de efectuar la administración de los dispositivos móviles empleados para tal fin, como apoyo para la integración de mesas directivas de casilla y capacitación electoral, en los procesos electorales y demás ejercicios democráticos (consulta popular, revocación de mandato, elección del poder judicial).",
     "developedActivities": [
       "Recibí y distribuí los dispositivos móviles y tarjetas SIM, que se utilizaron en la operación de la herramienta tecnológica ELEC móvil y otras aplicaciones operadas durante el Proceso Electoral, conforme a lo indicado por la o el Vocal de Capacitación Electoral y Educación Cívica.",
       "Capacité a las y los Supervisores Electorales y Capacitadores-Asistentes Electorales sobre el uso de la aplicación ELEC móvil y otras aplicaciones puestas en operación durante el Proceso Electoral Concurrente 2026-2027.",
