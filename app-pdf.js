@@ -75,12 +75,34 @@ async function generatePdf(save=true){
     doc.setFontSize(8);
     doc.text(genericActivityTitle().toLocaleUpperCase("es-MX"),x+w/2,y,{align:"center"});
     y+=2;
-    const genericLines=doc.splitTextToSize(String(currentPositionConfig().genericActivity||"Pendiente de configurar para este puesto."),w-8);
-    const gh=Math.max(19,genericLines.length*4+7);
-    box(x,y,w,gh);
+    // Cada párrafo conserva su última línea alineada a la izquierda.
+    const wrapParagraphs=(text,width)=>text.split(/\r\n?|\n/).flatMap(paragraph=>{
+      const lines=doc.splitTextToSize(paragraph.trim(),width);
+      return lines.map((text,index)=>({text,justify:index<lines.length-1}));
+    });
+    const drawLines=(lines,left,top,width,leading)=>{
+      lines.forEach(({text,justify},index)=>{
+        const baseline=top+index*leading;
+        const words=text.trim().split(/\s+/);
+        if(!justify || words.length<2){
+          doc.text(text,left,baseline);
+          return;
+        }
+        const widths=words.map(word=>doc.getTextWidth(word));
+        const gap=(width-widths.reduce((sum,value)=>sum+value,0))/(words.length-1);
+        let cursor=left;
+        words.forEach((word,i)=>{
+          doc.text(word,cursor,baseline);
+          cursor+=widths[i]+gap;
+        });
+      });
+    };
     doc.setFont("helvetica","normal");
     doc.setFontSize(7.5);
-    doc.text(genericLines,x+4,y+6);
+    const genericLines=wrapParagraphs(String(currentPositionConfig().genericActivity||"Pendiente de configurar para este puesto."),w-8);
+    const gh=Math.max(19,genericLines.length*4+7);
+    box(x,y,w,gh);
+    drawLines(genericLines,x+4,y+6,w-8,4);
 
     y+=gh;
     const footerY=253,signHeight=20,legalHeight=14,titleHeight=5;
@@ -105,7 +127,8 @@ async function generatePdf(save=true){
     doc.setFont("helvetica","normal");doc.setFontSize(8);
     const actLines=[];
     activities.forEach((a,n)=>{
-      actLines.push(...doc.splitTextToSize(`${n+1}. ${a}`,w-12),"");
+      if(n) actLines.push({text:"",justify:false});
+      actLines.push(...wrapParagraphs(`${n+1}. ${a}`,w-12));
     });
     if(y+titleHeight+12>footerY){doc.addPage();y=30;}
     while(actLines.length){
@@ -117,7 +140,7 @@ async function generatePdf(save=true){
       const pageLines=actLines.splice(0,capacity);
       box(x,y,w,footerY-y);
       doc.setFont("helvetica","normal");doc.setFontSize(8);
-      doc.text(pageLines,x+6,y+6,{lineHeightFactor:4/(8*25.4/72)});
+      drawLines(pageLines,x+6,y+6,w-12,4);
       drawFooter();
       if(actLines.length){doc.addPage();y=30;}
     }
