@@ -209,6 +209,16 @@ function positionLabel(pos=currentPosition()){
     "Validador":"Validador de Captura"
   })[pos] || pos;
 }
+function correctCatalogActivity(activity, pos){
+  if(pos!=="Técnico") return activity;
+  return String(activity)
+    .replace(/\\bEn su caso,\\s*/gi,"")
+    .replace(/,\\s*en su caso,\\s*/gi,", ")
+    .replace(/\\s+o,\\s*en su caso,\\s*ampliar la lista de (reserva|Reserva)/gi," y para ampliar la lista de reserva")
+    .replace(/a la\\/el Vocal de Capacitación Electoral y Educación Cívica Distrital/g,"a la Vocal de Capacitación Electoral y Educación Cívica Distrital")
+    .replace(/la o el Vocal de Capacitación Electoral y Educación Cívica/g,"la Vocal de Capacitación Electoral y Educación Cívica")
+    .replace(/\\s{2,}/g," ").trim();
+}
 function positionConfig(pos){
   pos=normalizePosition(pos);
   let configured=state.settings?.positions?.[pos] || {};
@@ -221,7 +231,7 @@ function positionConfig(pos){
     : [];
   return {
     genericActivity:configured.genericActivity || defaults.genericActivity || state.settings?.genericActivity || "",
-    developedActivities:activities.length ? activities : (defaults.developedActivities || [])
+    developedActivities:(activities.length ? activities : (defaults.developedActivities || [])).map(a=>correctCatalogActivity(a,pos))
   };
 }
 function currentPositionConfig(){
