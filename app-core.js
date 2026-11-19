@@ -211,6 +211,7 @@ function positionLabel(pos=currentPosition()){
 }
 function correctCatalogActivity(activity, pos){
   const wording=activity
+    .replace(/\b(?:la\s+o\s+el|el\s+o\s+la|la\s*\/\s*el|el\s*\/\s*la)\s+(Vocal de Capacitación Electoral y Educación Cívica)/gi,"la $1")
     .replace(/\bapoyé(?![\wáéíóúüñ])/gi, word=>word==="apoyé" ? "colaboré" : word==="APOYÉ" ? "COLABORÉ" : "Colaboré")
     .replace(/(colaboré) a la Junta Distrital Ejecutiva y al Consejo Distrital/gi,"$1 con la Junta Distrital Ejecutiva y el Consejo Distrital")
     .replace(/(colaboré) a la (Junta Distrital Ejecutiva|Vocal de Capacitación Electoral y Educación Cívica Distrital)/gi,"$1 con la $2");
@@ -219,8 +220,6 @@ function correctCatalogActivity(activity, pos){
     .replace(/\s+o,\s*en su caso,\s*ampliar la lista de reserva/gi," y para ampliar la lista de reserva")
     .replace(/\bEn su caso,\s*/gi,"")
     .replace(/,\s*en su caso,\s*/gi,", ")
-    .replace(/a la\/el Vocal de Capacitación Electoral y Educación Cívica Distrital/g,"a la Vocal de Capacitación Electoral y Educación Cívica Distrital")
-    .replace(/la o el Vocal de Capacitación Electoral y Educación Cívica/g,"la Vocal de Capacitación Electoral y Educación Cívica")
     .replace(/Evaluación de conocimiento, así como en la reunión de trabajo para calificar las correspondientes/g,"Evaluación de conocimientos, así como en la reunión de trabajo para calificar los exámenes correspondientes")
     .replace(/Difundí la Convocatoria para participar como Supervisor Electoral o Capacitador-Asistente Electoral \(cartel, volante, perifoneo, redes sociales y medios electrónicos\)\./g,"Difundí la convocatoria para participar como Supervisor Electoral o Capacitador-Asistente Electoral mediante carteles, volantes, perifoneo, redes sociales y medios electrónicos.")
     .replace(/\s{2,}/g," ").trim();
