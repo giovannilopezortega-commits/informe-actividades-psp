@@ -212,12 +212,14 @@ function positionLabel(pos=currentPosition()){
 function correctCatalogActivity(activity, pos){
   if(pos!=="Técnico") return activity;
   return String(activity)
-    .replace(/\\bEn su caso,\\s*/gi,"")
-    .replace(/,\\s*en su caso,\\s*/gi,", ")
-    .replace(/\\s+o,\\s*en su caso,\\s*ampliar la lista de (reserva|Reserva)/gi," y para ampliar la lista de reserva")
-    .replace(/a la\\/el Vocal de Capacitación Electoral y Educación Cívica Distrital/g,"a la Vocal de Capacitación Electoral y Educación Cívica Distrital")
+    .replace(/\s+o,\s*en su caso,\s*ampliar la lista de reserva/gi," y para ampliar la lista de reserva")
+    .replace(/\bEn su caso,\s*/gi,"")
+    .replace(/,\s*en su caso,\s*/gi,", ")
+    .replace(/a la\/el Vocal de Capacitación Electoral y Educación Cívica Distrital/g,"a la Vocal de Capacitación Electoral y Educación Cívica Distrital")
     .replace(/la o el Vocal de Capacitación Electoral y Educación Cívica/g,"la Vocal de Capacitación Electoral y Educación Cívica")
-    .replace(/\\s{2,}/g," ").trim();
+    .replace(/Evaluación de conocimiento, así como en la reunión de trabajo para calificar las correspondientes/g,"Evaluación de conocimientos, así como en la reunión de trabajo para calificar los exámenes correspondientes")
+    .replace(/Difundí la Convocatoria para participar como Supervisor Electoral o Capacitador-Asistente Electoral \(cartel, volante, perifoneo, redes sociales y medios electrónicos\)\./g,"Difundí la convocatoria para participar como Supervisor Electoral o Capacitador-Asistente Electoral mediante carteles, volantes, perifoneo, redes sociales y medios electrónicos.")
+    .replace(/\s{2,}/g," ").trim();
 }
 function positionConfig(pos){
   pos=normalizePosition(pos);
